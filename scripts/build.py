@@ -43,12 +43,15 @@ def ensure_deps():
 
 
 def build_qt() -> int:
-    """Build Qt version into a standalone exe."""
+    """Build Qt version into a standalone exe/binary."""
     ensure_deps()
 
     print("\n=== Building dspng (PyInstaller) ===\n")
 
     icon = PROJECT_ROOT / "icon.ico"
+    sep = ";" if sys.platform == "win32" else ":"
+    suffix = ".exe" if sys.platform == "win32" else ""
+
     cmd = [
         "uv", "run", "pyinstaller",
         "--onefile",
@@ -57,7 +60,7 @@ def build_qt() -> int:
         "--distpath", str(DIST_DIR),
         "--workpath", str(BUILD_DIR),
         "--clean",
-        f"--add-data={icon};.",
+        f"--add-data={icon}{sep}.",
         str(SRC_DSPNG / "main.py"),
     ]
     if icon.exists():
@@ -66,7 +69,7 @@ def build_qt() -> int:
     rc = run(cmd)
 
     if rc == 0:
-        exe = DIST_DIR / "dspng.exe"
+        exe = DIST_DIR / f"dspng{suffix}"
         size_mb = exe.stat().st_size / (1024 * 1024)
         print(f"\n[OK] Built: {exe}  ({size_mb:.1f} MB)")
     else:
