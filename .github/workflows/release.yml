@@ -17,15 +17,12 @@ jobs:
           - os: windows-latest
             artifact: dspng.exe
             asset_name: dspng-windows-amd64.exe
-            add_data_sep: ";"
           - os: macos-latest
             artifact: dspng
             asset_name: dspng-macos-amd64
-            add_data_sep: ":"
           - os: ubuntu-latest
             artifact: dspng
             asset_name: dspng-linux-amd64
-            add_data_sep: ":"
 
     runs-on: ${{ matrix.os }}
 
@@ -48,16 +45,7 @@ jobs:
         run: uv add --dev pyinstaller
 
       - name: Build with PyInstaller
-        run: >
-          uv run pyinstaller
-          --onefile
-          --windowed
-          --name dspng
-          --add-data icon.ico${{ matrix.add_data_sep }}.
-          --distpath dist
-          --workpath tmp/build
-          --clean
-          src/dspng/main.py
+        run: uv run scripts/build.py
 
       - name: Rename artifact
         run: mv dist/${{ matrix.artifact }} dist/${{ matrix.asset_name }}
