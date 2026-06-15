@@ -6,6 +6,7 @@ Supports:
   - Drag-and-drop .psd files from the OS file manager.
   - Click to select a document for editing.
   - Add / remove buttons.
+  - Three fixed row size presets: 32, 64, 128 px.
 """
 
 from __future__ import annotations
@@ -13,7 +14,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import QAbstractListModel, QMimeData, QModelIndex, Qt, Signal
+from PySide6.QtCore import (
+    QAbstractListModel,
+    QMimeData,
+    QModelIndex,
+    QSize,
+    Qt,
+    Signal,
+)
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QImage, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -27,13 +35,37 @@ from ...models import PsdDocument
 from ...psd_manager import DocumentStore
 from ...renderer import generate_doc_thumbnail
 
+# Available row height presets.
+_SIZE_PRESETS = [32, 64, 128]
+
+# Maps pixel size → label for buttons.
+_SIZE_LABELS = {32: "S", 64: "M", 128: "L"}
+
 
 class FileListModel(QAbstractListModel):
-    """Qt model backed by DocumentStore."""
+    """Qt model backed by DocumentStore.
+    
+    Thumbnails are generated on the fly at the *icon_size* passed
+    during construction.  Call `set_icon_size()` to resize.
+    """
 
-    def __init__(self, store: DocumentStore, parent=None):
+    def __init__(self, store: DocumentStore, icon_size: int = 64, parent=None):
         super().__init__(parent)
         self._store = store
+        self._icon_size = icon_size
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def set_icon_size(self, size: int) -> None:
+        """Change the thumbnail size and refresh all rows."""
+        self._icon_size = size
+        self.refresh()
+
+    # ------------------------------------------------------------------
+    # QAbstractListModel interface
+    # ------------------------------------------------------------------
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._store.documents)
@@ -45,7 +77,7 @@ class FileListModel(QAbstractListModel):
         if role == Qt.ItemDataRole.DisplayRole:
             return doc.name
         if role == Qt.ItemDataRole.DecorationRole:
-            thumb = generate_doc_thumbnail(doc)
+            thumb = generate_doc_thumbnail(doc, (self._icon_size, self._icon_size))
             return _pil_to_qpixmap(thumb)
         return None
 
@@ -57,12 +89,12 @@ class FileListModel(QAbstractListModel):
 class FileListPanel(QWidget):
     """The file list panel shown in the top-right of the main window."""
 
-    # Emitted when the user selects a different document.
-    document_selected = Signal(int)  # index in store
+    document_selected = Signal(int)
 
     def __init__(self, store: DocumentStore, parent=None):
         super().__init__(parent)
         self._store = store
+        self._current_size = 64
         self._setup_ui()
 
     def _setup_ui(self):
@@ -70,27 +102,64 @@ class FileListPanel(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         # --- List view ---
-        self._model = FileListModel(self._store)
+        self._model = FileListModel(self._store, self._current_size)
         self._list_view = QListView()
         self._list_view.setModel(self._model)
-        self._list_view.setIconSize(self._list_view.iconSize())  # default
+        self._list_view.setIconSize(QSize(self._current_size, self._current_size))
         self._list_view.setDragDropMode(QListView.DragDropMode.NoDragDrop)
         self._list_view.setSelectionMode(QListView.SelectionMode.SingleSelection)
         self._list_view.clicked.connect(self._on_clicked)
         layout.addWidget(self._list_view)
 
-        # --- Buttons ---
-        btn_row = QHBoxLayout()
+        # --- Bottom row: size presets + add/remove buttons ---
+        bottom_row = QHBoxLayout()
+
+        # Size preset buttons (S / M / L).
+        for px in _SIZE_PRESETS:
+            label = _SIZE_LABELS.get(px, str(px))
+            btn = QPushButton(label)
+            btn.setFixedWidth(30)
+            btn.setCheckable(True)
+            if px == self._current_size:
+                btn.setChecked(True)
+            btn.clicked.connect(lambda checked, s=px: self._set_size(s))
+            bottom_row.addWidget(btn)
+
+        bottom_row.addStretch()
+
         self._btn_add = QPushButton("+ Add")
         self._btn_remove = QPushButton("− Remove")
         self._btn_add.clicked.connect(self._on_add)
         self._btn_remove.clicked.connect(self._on_remove)
-        btn_row.addWidget(self._btn_add)
-        btn_row.addWidget(self._btn_remove)
-        layout.addLayout(btn_row)
+        bottom_row.addWidget(self._btn_add)
+        bottom_row.addWidget(self._btn_remove)
+
+        layout.addLayout(bottom_row)
 
         # --- Accept drops ---
         self.setAcceptDrops(True)
+
+    # ------------------------------------------------------------------
+    # Size presets
+    # ------------------------------------------------------------------
+
+    def _set_size(self, px: int):
+        """Switch to a new thumbnail size, regenerating all thumbnails."""
+        if px == self._current_size:
+            return
+        self._current_size = px
+        self._list_view.setIconSize(QSize(px, px))
+
+        # Invalidate cached thumbnails so they regenerate at the new size.
+        for doc in self._store.documents:
+            doc.invalidate_thumbnail()
+
+        self._model.set_icon_size(px)
+
+        # Update the checked state on size buttons.
+        label = _SIZE_LABELS.get(px, str(px))
+        for btn in self._size_buttons:
+            btn.setChecked(btn.text() == label)
 
     # ------------------------------------------------------------------
     # Drag-and-drop
@@ -101,13 +170,22 @@ class FileListPanel(QWidget):
             event.acceptProposedAction()
 
     def dropEvent(self, event: QDropEvent):
+        from PySide6.QtWidgets import QMessageBox
+
+        errors: list[str] = []
         for url in event.mimeData().urls():
             path = Path(url.toLocalFile())
             if path.suffix.lower() == ".psd":
-                self._store.add_document(path)
+                try:
+                    self._store.add_document(path)
+                except Exception as e:
+                    errors.append(f"{path.name}: {e}")
         self._model.refresh()
         if self._store.selected_index is not None:
             self.document_selected.emit(self._store.selected_index)
+        if errors:
+            msg = "Failed to load:\n" + "\n".join(errors)
+            QMessageBox.warning(self, "Load Error", msg)
 
     # ------------------------------------------------------------------
     # Button / click handlers
@@ -118,16 +196,25 @@ class FileListPanel(QWidget):
         self.document_selected.emit(index.row())
 
     def _on_add(self):
-        from PySide6.QtWidgets import QFileDialog
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
 
         paths, _ = QFileDialog.getOpenFileNames(
             self, "Open PSD Files", "", "Photoshop Files (*.psd)"
         )
+        loaded = 0
+        errors: list[str] = []
         for p in paths:
-            self._store.add_document(Path(p))
+            try:
+                self._store.add_document(Path(p))
+                loaded += 1
+            except Exception as e:
+                errors.append(f"{Path(p).name}: {e}")
         self._model.refresh()
         if self._store.selected_index is not None:
             self.document_selected.emit(self._store.selected_index)
+        if errors:
+            msg = "Failed to load:\n" + "\n".join(errors)
+            QMessageBox.warning(self, "Load Error", msg)
 
     def _on_remove(self):
         idx = self._store.selected_index
@@ -139,17 +226,14 @@ class FileListPanel(QWidget):
             )
 
     def refresh(self):
-        """Refresh the list after external changes."""
         self._model.refresh()
 
     def refresh_current_thumbnail(self):
-        """Refresh the thumbnail for the currently selected document."""
         if self._store.selected_index is None:
             return
         doc = self._store.selected_document
         if doc is None:
             return
-        # Invalidate so it is regenerated on next access.
         doc.invalidate_thumbnail()
         idx = self._model.index(self._store.selected_index, 0)
         if idx.isValid():
@@ -163,9 +247,6 @@ class FileListPanel(QWidget):
 # ------------------------------------------------------------------
 
 def _pil_to_qpixmap(pil_img) -> QPixmap:
-    """Convert a PIL RGBA image to a QPixmap."""
-    from PySide6.QtGui import QImage, QPixmap
-
     data = pil_img.tobytes("raw", "RGBA")
     qimg = QImage(data, pil_img.width, pil_img.height, QImage.Format.Format_RGBA8888)
     return QPixmap.fromImage(qimg)

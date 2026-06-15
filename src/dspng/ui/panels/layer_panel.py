@@ -29,7 +29,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
     QHeaderView,
-    QSlider,
     QStyledItemDelegate,
     QTreeView,
     QVBoxLayout,
@@ -430,15 +429,12 @@ class LayerPanel(QWidget):
     # Emitted when a visibility change should refresh the file list thumbnail.
     thumbnail_changed = Signal()
 
-    # Default and limits for the row-height slider.
-    _ROW_H_DEFAULT = 24
-    _ROW_H_MIN = 16
-    _ROW_H_MAX = 64
+    # Fixed thumbnail size for the layer tree.
+    _THUMB_SIZE = (20, 20)  # ~row height (24px) minus padding
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._doc: Optional[PsdDocument] = None
-        self._row_height = self._ROW_H_DEFAULT
         self._setup_ui()
 
     def _setup_ui(self):
@@ -476,37 +472,6 @@ class LayerPanel(QWidget):
 
         layout.addWidget(self._tree, stretch=1)
 
-        # --- Row-height slider ---
-        slider_row = QHBoxLayout()
-        slider_row.setContentsMargins(4, 2, 4, 2)
-
-        from PySide6.QtWidgets import QLabel, QPushButton
-
-        btn_shrink = QPushButton("−")
-        btn_shrink.setFixedWidth(24)
-        btn_shrink.clicked.connect(lambda: self._set_row_height(self._row_height - 4))
-
-        btn_grow = QPushButton("+")
-        btn_grow.setFixedWidth(24)
-        btn_grow.clicked.connect(lambda: self._set_row_height(self._row_height + 4))
-
-        self._slider = QSlider(Qt.Orientation.Horizontal)
-        self._slider.setRange(self._ROW_H_MIN, self._ROW_H_MAX)
-        self._slider.setValue(self._ROW_H_DEFAULT)
-        self._slider.valueChanged.connect(self._set_row_height)
-
-        self._size_label = QLabel(f"{self._ROW_H_DEFAULT}px")
-        self._size_label.setFixedWidth(36)
-
-        slider_row.addWidget(btn_shrink)
-        slider_row.addWidget(self._slider)
-        slider_row.addWidget(btn_grow)
-        slider_row.addWidget(self._size_label)
-        layout.addLayout(slider_row)
-
-        # Apply initial row height.
-        self._apply_row_height()
-
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -523,44 +488,11 @@ class LayerPanel(QWidget):
 
     def _on_visibility_toggled(self):
         """Called when a checkbox is toggled in the delegate."""
-        # Regenerate group/doc thumbnails that were just invalidated.
         if self._doc is not None:
-            size = self._current_thumb_size()
-            self._model.refresh_thumbnails_for_size(size)
+            self._model.refresh_thumbnails_for_size(self._THUMB_SIZE)
             self._refresh_tree_decorations()
         self.layer_visibility_changed.emit()
         self.thumbnail_changed.emit()
-
-    # ------------------------------------------------------------------
-    # Row height
-    # ------------------------------------------------------------------
-
-    def _current_thumb_size(self) -> tuple[int, int]:
-        """Thumbnail size derived from current row height."""
-        h = max(16, self._row_height - 4)
-        return (h, h)
-
-    def _set_row_height(self, value: int):
-        self._row_height = max(self._ROW_H_MIN, min(self._ROW_H_MAX, value))
-        self._slider.blockSignals(True)
-        self._slider.setValue(self._row_height)
-        self._slider.blockSignals(False)
-        self._size_label.setText(f"{self._row_height}px")
-        self._apply_row_height()
-        # Regenerate all thumbnails at the new size.
-        self._model.invalidate_all_thumbnails()
-        size = self._current_thumb_size()
-        self._model.refresh_thumbnails_for_size(size)
-        self._refresh_tree_decorations()
-
-    def _apply_row_height(self):
-        h = self._row_height
-        # iconSize is the primary mechanism QTreeView uses for row height
-        # when uniformRowHeights is True.
-        self._tree.setIconSize(QSize(h, h))
-        self._tree.setStyleSheet(
-            f"QTreeView::item {{ height: {h}px; min-height: {h}px; padding: 1px; }}"
-        )
 
     # ------------------------------------------------------------------
     # Tree decoration refresh
