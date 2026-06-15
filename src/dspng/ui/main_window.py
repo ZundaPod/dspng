@@ -34,6 +34,7 @@ from ..psd_manager import DocumentStore
 from .panels.file_list import FileListPanel
 from .panels.layer_panel import LayerPanel
 from .panels.render_canvas import RenderCanvas
+from .styles import STYLESHEET
 
 
 class MainWindow(QMainWindow):
@@ -44,6 +45,9 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("dspng — PSD → PNG")
         self.resize(1200, 800)
+
+        # Apply dark theme.
+        self.setStyleSheet(STYLESHEET)
 
         # Central state
         self._store = DocumentStore()
@@ -74,17 +78,12 @@ class MainWindow(QMainWindow):
         """Wrap *widget* in a container with a title label and border."""
         container = QFrame()
         container.setFrameShape(QFrame.Shape.StyledPanel)
-        container.setStyleSheet(
-            "QFrame { border: 1px solid #444; border-radius: 3px; }"
-        )
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(2, 2, 2, 2)
-        layout.setSpacing(2)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        label = QLabel(title)
-        label.setStyleSheet(
-            "font-weight: bold; font-size: 11px; color: #aaa; padding: 2px 4px;"
-        )
+        label = QLabel(title.upper())
+        label.setObjectName("panelTitle")
         layout.addWidget(label)
         layout.addWidget(widget, stretch=1)
         return container
