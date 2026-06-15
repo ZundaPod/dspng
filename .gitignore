@@ -1,5 +1,11 @@
 __pycache__/
 *.pyc
+*.pyo
 .venv/
 *.psd
 tmp/
+dist/
+build/
+*.spec
+*.egg-info/
+.eggs/

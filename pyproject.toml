@@ -20,3 +20,8 @@ packages = ["src/dspng"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.21.0",
+]
