@@ -347,9 +347,10 @@ class LayerTreeModel(QAbstractItemModel):
             return False
 
         children[idx], children[target] = children[target], children[idx]
+        self.beginResetModel()
         self._populate_children(parent_w)
         self.invalidate_all_thumbnails()
-        self.layoutChanged.emit()
+        self.endResetModel()
         return True
 
     def flags(self, index: QModelIndex):
@@ -433,10 +434,10 @@ class LayerTreeModel(QAbstractItemModel):
         children.insert(data_idx, src_wrapper.item)
 
         # Rebuild wrappers from the data model.
+        self.beginResetModel()
         self._populate_children(dest_wrapper)
-
         self.invalidate_all_thumbnails()
-        self.layoutChanged.emit()
+        self.endResetModel()
         return True
 
 

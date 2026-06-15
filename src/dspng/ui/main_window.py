@@ -89,6 +89,10 @@ class MainWindow(QMainWindow):
         h_splitter.addWidget(v_splitter)
         h_splitter.setStretchFactor(1, 1)  # right column gets 1/4
 
+        # Set initial sizes: canvas ~70%, right column ~30%.
+        h_splitter.setSizes([840, 360])
+        v_splitter.setSizes([250, 550])
+
         root_layout.addWidget(h_splitter)
 
     # ------------------------------------------------------------------
