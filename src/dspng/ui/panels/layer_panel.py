@@ -458,8 +458,8 @@ class LayerPanel(QWidget):
     thumbnail_changed = Signal()
 
     # Available row height presets.
-    _SIZE_PRESETS = [20, 32, 48]
-    _SIZE_LABELS = {20: "S", 32: "M", 48: "L"}
+    _SIZE_PRESETS = [32, 64, 128]
+    _SIZE_LABELS = {32: "S", 64: "M", 128: "L"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -579,11 +579,11 @@ class LayerPanel(QWidget):
         """Set the tree view's icon size and row height from current thumb size."""
         from PySide6.QtCore import QSize
         px = self._thumb_size
-        # Icon is slightly smaller than row height to leave room for padding.
-        icon_px = max(16, px - 4)
-        self._tree.setIconSize(QSize(icon_px, icon_px))
+        # Icon is a square matching the thumbnail size.
+        self._tree.setIconSize(QSize(px, px))
+        # Row height = icon + padding so content doesn't clip.
         self._tree.setStyleSheet(
-            f"QTreeView::item {{ height: {px}px; min-height: {px}px; }}"
+            f"QTreeView::item {{ height: {px + 4}px; min-height: {px + 4}px; }}"
         )
 
     def _move_selected(self, direction: int):
