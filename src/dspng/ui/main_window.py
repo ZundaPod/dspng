@@ -251,9 +251,41 @@ class MainWindow(QMainWindow):
     def _setup_help_menu(self):
         menu = self.menuBar().addMenu("&Help")
 
+        act_shortcuts = QAction("&Keyboard Shortcuts", self)
+        act_shortcuts.setShortcut("F1")
+        act_shortcuts.triggered.connect(self._on_shortcuts)
+        menu.addAction(act_shortcuts)
+
         act_about = QAction("&About", self)
         act_about.triggered.connect(self._on_about)
         menu.addAction(act_about)
+
+    def _on_shortcuts(self):
+        QMessageBox.information(
+            self,
+            "Keyboard Shortcuts",
+            "<h3>Keyboard Shortcuts</h3>"
+            "<table cellspacing='8'>"
+            "<tr><th colspan='2' align='left'>Global</th></tr>"
+            "<tr><td><b>Ctrl+O</b></td><td>Open PSD file</td></tr>"
+            "<tr><td><b>Ctrl+E</b></td><td>Export PNG</td></tr>"
+            "<tr><td><b>Ctrl+Q</b></td><td>Quit</td></tr>"
+            "<tr><td><b>F1</b></td><td>This dialog</td></tr>"
+            "<tr><th colspan='2' align='left'>Render Canvas</th></tr>"
+            "<tr><td><b>Scroll wheel</b></td><td>Zoom in/out</td></tr>"
+            "<tr><td><b>Middle-click drag</b></td><td>Pan</td></tr>"
+            "<tr><td><b>Alt+Left-click drag</b></td><td>Pan</td></tr>"
+            "<tr><td><b>Double-click</b></td><td>Fit to view</td></tr>"
+            "<tr><td><b>Left-click drag</b></td><td>Drag export PNG</td></tr>"
+            "<tr><th colspan='2' align='left'>Layer Panel</th></tr>"
+            "<tr><td><b>S / M / L</b></td><td>Row height presets</td></tr>"
+            "<tr><td><b>Up / Down</b></td><td>Move layer/group</td></tr>"
+            "<tr><td><b>Checkbox</b></td><td>Toggle visibility</td></tr>"
+            "<tr><th colspan='2' align='left'>File List</th></tr>"
+            "<tr><td><b>Drag-drop .psd</b></td><td>Import file</td></tr>"
+            "<tr><td><b>Reload</b></td><td>Re-read selected PSD</td></tr>"
+            "</table>",
+        )
 
     def _on_about(self):
         QMessageBox.about(
