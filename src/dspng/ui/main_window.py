@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
@@ -34,7 +34,17 @@ from ..psd_manager import DocumentStore
 from .panels.file_list import FileListPanel
 from .panels.layer_panel import LayerPanel
 from .panels.render_canvas import RenderCanvas
-from .styles import STYLESHEET
+from .settings import get_accent, get_mode, load, save
+from .styles import generate_stylesheet
+from .themes import (
+    ACCENT_LABELS,
+    MODE_LABELS,
+    Accent,
+    Theme,
+    ThemeMode,
+    make_dark,
+    make_light,
+)
 
 
 class MainWindow(QMainWindow):
@@ -46,8 +56,12 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("dspng — PSD → PNG")
         self.resize(1200, 800)
 
-        # Apply dark theme.
-        self.setStyleSheet(STYLESHEET)
+        # Load persisted settings and apply theme.
+        self._settings = load()
+        self._mode = get_mode(self._settings)
+        self._accent = get_accent(self._settings)
+        self._theme: Theme = make_dark(self._accent)
+        self._apply_theme()
 
         # Central state
         self._store = DocumentStore()
@@ -57,8 +71,7 @@ class MainWindow(QMainWindow):
         self._layer_panel = LayerPanel()
         self._canvas = RenderCanvas()
 
-        # Layout: horizontal splitter (canvas | right column)
-        # Right column: vertical splitter (file list | layer panel)
+        # Layout
         self._setup_layout()
 
         # Wire up signals
@@ -66,8 +79,30 @@ class MainWindow(QMainWindow):
         self._layer_panel.layer_visibility_changed.connect(self._on_visibility_changed)
         self._layer_panel.thumbnail_changed.connect(self._on_thumbnail_changed)
 
-        # Menu bar (File → Open / Export / Quit)
-        self._setup_menu()
+        # Menu bar
+        self._setup_file_menu()
+        self._setup_view_menu()
+
+    # ------------------------------------------------------------------
+    # Theme
+    # ------------------------------------------------------------------
+
+    def _apply_theme(self):
+        """Resolve the current mode (handle SYSTEM) and apply the stylesheet."""
+        mode = self._mode
+        if mode == ThemeMode.SYSTEM:
+            # Detect system preference via palette.
+            # PySide6 doesn't expose a direct API, so use a heuristic:
+            # check if the window's default background is light or dark.
+            from PySide6.QtGui import QGuiApplication
+
+            palette = QGuiApplication.palette()
+            bg = palette.window().color()
+            is_dark = bg.lightnessF() < 0.5
+            mode = ThemeMode.DARK if is_dark else ThemeMode.LIGHT
+
+        self._theme = make_dark(self._accent) if mode == ThemeMode.DARK else make_light(self._accent)
+        self.setStyleSheet(generate_stylesheet(self._theme))
 
     # ------------------------------------------------------------------
     # Layout
@@ -94,34 +129,28 @@ class MainWindow(QMainWindow):
         root_layout = QHBoxLayout(central)
         root_layout.setContentsMargins(4, 4, 4, 4)
 
-        # Horizontal splitter: canvas (left) | right column (right)
         h_splitter = QSplitter(Qt.Orientation.Horizontal)
-
-        # Left: render canvas
         h_splitter.addWidget(self._make_panel("Render", self._canvas))
-        h_splitter.setStretchFactor(0, 3)  # canvas gets 3/4 of space
+        h_splitter.setStretchFactor(0, 3)
 
-        # Right column: vertical splitter (file list on top, layers on bottom)
         v_splitter = QSplitter(Qt.Orientation.Vertical)
         v_splitter.addWidget(self._make_panel("Files", self._file_list))
         v_splitter.addWidget(self._make_panel("Layers", self._layer_panel))
-        v_splitter.setStretchFactor(0, 1)  # file list gets 1/3
-        v_splitter.setStretchFactor(1, 2)  # layer panel gets 2/3
+        v_splitter.setStretchFactor(0, 1)
+        v_splitter.setStretchFactor(1, 2)
 
         h_splitter.addWidget(v_splitter)
-        h_splitter.setStretchFactor(1, 1)  # right column gets 1/4
-
-        # Set initial sizes: canvas ~70%, right column ~30%.
+        h_splitter.setStretchFactor(1, 1)
         h_splitter.setSizes([840, 360])
         v_splitter.setSizes([250, 550])
 
         root_layout.addWidget(h_splitter)
 
     # ------------------------------------------------------------------
-    # Menu
+    # Menus
     # ------------------------------------------------------------------
 
-    def _setup_menu(self):
+    def _setup_file_menu(self):
         menu = self.menuBar().addMenu("&File")
 
         act_open = QAction("&Open…", self)
@@ -141,6 +170,53 @@ class MainWindow(QMainWindow):
         act_quit.triggered.connect(self.close)
         menu.addAction(act_quit)
 
+    def _setup_view_menu(self):
+        menu = self.menuBar().addMenu("&View")
+
+        # ---- Theme mode submenu ----
+        mode_menu = menu.addMenu("Theme")
+        mode_group = QActionGroup(self)
+        mode_group.setExclusive(True)
+
+        for mode in ThemeMode:
+            act = QAction(MODE_LABELS[mode], self)
+            act.setCheckable(True)
+            act.setChecked(self._mode == mode)
+            act.triggered.connect(lambda checked, m=mode: self._set_mode(m))
+            mode_group.addAction(act)
+            mode_menu.addAction(act)
+
+        menu.addSeparator()
+
+        # ---- Accent submenu ----
+        accent_menu = menu.addMenu("Accent")
+        accent_group = QActionGroup(self)
+        accent_group.setExclusive(True)
+
+        for accent in Accent:
+            act = QAction(ACCENT_LABELS[accent], self)
+            act.setCheckable(True)
+            act.setChecked(self._accent == accent)
+            act.triggered.connect(lambda checked, a=accent: self._set_accent(a))
+            accent_group.addAction(act)
+            accent_menu.addAction(act)
+
+    # ------------------------------------------------------------------
+    # Theme actions
+    # ------------------------------------------------------------------
+
+    def _set_mode(self, mode: ThemeMode):
+        self._mode = mode
+        self._settings["theme_mode"] = mode.value
+        save(self._settings)
+        self._apply_theme()
+
+    def _set_accent(self, accent: Accent):
+        self._accent = accent
+        self._settings["accent"] = accent.value
+        save(self._settings)
+        self._apply_theme()
+
     # ------------------------------------------------------------------
     # Slots
     # ------------------------------------------------------------------
@@ -154,7 +230,6 @@ class MainWindow(QMainWindow):
         self._canvas.refresh_composite()
 
     def _on_thumbnail_changed(self):
-        """Refresh the file list thumbnail for the current document."""
         self._file_list.refresh_current_thumbnail()
 
     def _on_open(self):

@@ -1,94 +1,71 @@
 """
-Global dark-theme stylesheet for dspng.
+Dynamic QSS stylesheet generator.
 
-Inspired by Adobe Photoshop / Affinity Photo UI conventions:
-  - Dark gray palette (#1e1e1e → #4d4d4d)
-  - Subtle borders between panels
-  - Compact, flat controls
-  - Blue accent for selection (#2a6ad4)
+Accepts a Theme object and produces a complete Qt stylesheet string.
 """
 
-# ==============================================================================
-# Color palette
-# ==============================================================================
+from __future__ import annotations
 
-BG_DARKEST   = "#1e1e1e"  # window / canvas background
-BG_DARK      = "#252525"  # panel background
-BG_MID       = "#2d2d2d"  # tree / list background
-BG_LIGHT     = "#3a3a3a"  # hover / selected row
-BG_LIGHTER   = "#4d4d4d"  # pressed / active
+from .themes import Theme
 
-BORDER       = "#3a3a3a"  # panel borders
-BORDER_LIGHT = "#555555"  # splitter handle
 
-TEXT         = "#cccccc"  # primary text
-TEXT_DIM     = "#888888"  # secondary text
-TEXT_BRIGHT  = "#ffffff"  # selected text
+def generate_stylesheet(t: Theme) -> str:
+    """Return a full QSS string for the given theme."""
 
-ACCENT       = "#2a6ad4"  # selection / focus
-ACCENT_HOVER = "#3b7be5"
-
-CHECKMARK    = "#ffffff"
-
-# ==============================================================================
-# Stylesheet
-# ==============================================================================
-
-STYLESHEET = f"""
+    return f"""
 /* ---- Global ---- */
 QMainWindow, QWidget {{
-    background-color: {BG_DARKEST};
-    color: {TEXT};
+    background-color: {t.bg_primary};
+    color: {t.fg_primary};
     font-size: 11px;
     font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }}
 
 /* ---- Frames / panels ---- */
-QFrame[frameShape="6"] /* StyledPanel */ {{
-    background-color: {BG_DARK};
-    border: 1px solid {BORDER};
+QFrame[frameShape="6"] {{
+    background-color: {t.bg_secondary};
+    border: 1px solid {t.border};
     border-radius: 2px;
 }}
 
 /* ---- Panel title labels ---- */
 QLabel#panelTitle {{
-    background-color: {BG_DARKEST};
-    color: {TEXT_DIM};
+    background-color: {t.bg_primary};
+    color: {t.fg_secondary};
     font-size: 10px;
     font-weight: bold;
-    text-transform: uppercase;
     letter-spacing: 1px;
     padding: 3px 6px;
-    border-bottom: 1px solid {BORDER};
+    border-bottom: 1px solid {t.border};
 }}
 
 /* ---- Push buttons ---- */
 QPushButton {{
     background-color: transparent;
-    color: {TEXT};
+    color: {t.fg_primary};
     border: 1px solid transparent;
     border-radius: 2px;
     padding: 3px 8px;
     min-height: 20px;
 }}
 QPushButton:hover {{
-    background-color: {BG_LIGHT};
-    border-color: {BORDER_LIGHT};
+    background-color: {t.bg_tertiary};
+    border-color: {t.border};
 }}
 QPushButton:pressed {{
-    background-color: {BG_LIGHTER};
+    background-color: {t.border};
 }}
 QPushButton:checked {{
-    background-color: {ACCENT};
-    color: {TEXT_BRIGHT};
-    border-color: {ACCENT};
+    background-color: {t.accent};
+    color: {t.indicator};
+    border-color: {t.accent};
 }}
 
 /* ---- Tree / List views ---- */
 QTreeView, QListView {{
-    background-color: {BG_MID};
-    alternate-background-color: {BG_DARK};
-    border: 1px solid {BORDER};
+    background-color: {t.bg_secondary};
+    alternate-background-color: {t.bg_primary};
+    border: 1px solid {t.border};
     outline: none;
     font-size: 11px;
 }}
@@ -97,19 +74,19 @@ QTreeView::item, QListView::item {{
     border: none;
 }}
 QTreeView::item:selected, QListView::item:selected {{
-    background-color: {ACCENT};
-    color: {TEXT_BRIGHT};
+    background-color: {t.accent};
+    color: {t.indicator};
 }}
 QTreeView::item:hover, QListView::item:hover {{
-    background-color: {BG_LIGHT};
+    background-color: {t.bg_tertiary};
 }}
 
-/* ---- Header (hidden but keep styling) ---- */
+/* ---- Header ---- */
 QHeaderView::section {{
-    background-color: {BG_DARKEST};
-    color: {TEXT_DIM};
+    background-color: {t.bg_primary};
+    color: {t.fg_secondary};
     border: none;
-    border-right: 1px solid {BORDER};
+    border-right: 1px solid {t.border};
     padding: 2px 4px;
     font-size: 10px;
 }}
@@ -121,12 +98,12 @@ QScrollBar:vertical {{
     margin: 0;
 }}
 QScrollBar::handle:vertical {{
-    background: {BG_LIGHTER};
+    background: {t.bg_tertiary};
     border-radius: 4px;
     min-height: 20px;
 }}
 QScrollBar::handle:vertical:hover {{
-    background: {BORDER_LIGHT};
+    background: {t.border};
 }}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
     height: 0;
@@ -137,12 +114,12 @@ QScrollBar:horizontal {{
     margin: 0;
 }}
 QScrollBar::handle:horizontal {{
-    background: {BG_LIGHTER};
+    background: {t.bg_tertiary};
     border-radius: 4px;
     min-width: 20px;
 }}
 QScrollBar::handle:horizontal:hover {{
-    background: {BORDER_LIGHT};
+    background: {t.border};
 }}
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
     width: 0;
@@ -155,21 +132,21 @@ QCheckBox {{
 QCheckBox::indicator {{
     width: 14px;
     height: 14px;
-    border: 1px solid {BORDER_LIGHT};
+    border: 1px solid {t.border};
     border-radius: 2px;
-    background-color: {BG_MID};
+    background-color: {t.bg_secondary};
 }}
 QCheckBox::indicator:checked {{
-    background-color: {ACCENT};
-    border-color: {ACCENT};
+    background-color: {t.accent};
+    border-color: {t.accent};
 }}
 QCheckBox::indicator:hover {{
-    border-color: {ACCENT};
+    border-color: {t.accent};
 }}
 
 /* ---- Splitter ---- */
 QSplitter::handle {{
-    background-color: {BORDER};
+    background-color: {t.border};
 }}
 QSplitter::handle:horizontal {{
     width: 2px;
@@ -180,54 +157,60 @@ QSplitter::handle:vertical {{
 
 /* ---- Menu bar ---- */
 QMenuBar {{
-    background-color: {BG_DARKEST};
-    color: {TEXT};
-    border-bottom: 1px solid {BORDER};
+    background-color: {t.bg_primary};
+    color: {t.fg_primary};
+    border-bottom: 1px solid {t.border};
     padding: 2px;
 }}
 QMenuBar::item:selected {{
-    background-color: {BG_LIGHT};
+    background-color: {t.bg_tertiary};
 }}
 QMenu {{
-    background-color: {BG_DARK};
-    color: {TEXT};
-    border: 1px solid {BORDER};
+    background-color: {t.bg_secondary};
+    color: {t.fg_primary};
+    border: 1px solid {t.border};
 }}
 QMenu::item:selected {{
-    background-color: {ACCENT};
+    background-color: {t.accent};
+    color: {t.indicator};
+}}
+QMenu::separator {{
+    height: 1px;
+    background: {t.border};
+    margin: 4px 8px;
 }}
 
 /* ---- Slider ---- */
 QSlider::groove:horizontal {{
     height: 4px;
-    background: {BG_LIGHTER};
+    background: {t.bg_tertiary};
     border-radius: 2px;
 }}
 QSlider::handle:horizontal {{
-    background: {TEXT};
+    background: {t.fg_primary};
     width: 12px;
     height: 12px;
     margin: -4px 0;
     border-radius: 6px;
 }}
 QSlider::handle:horizontal:hover {{
-    background: {ACCENT};
+    background: {t.accent};
 }}
 
 /* ---- Tooltip ---- */
 QToolTip {{
-    background-color: {BG_DARK};
-    color: {TEXT};
-    border: 1px solid {BORDER_LIGHT};
+    background-color: {t.bg_secondary};
+    color: {t.fg_primary};
+    border: 1px solid {t.border};
     padding: 4px;
     font-size: 11px;
 }}
 
 /* ---- Message box ---- */
 QMessageBox {{
-    background-color: {BG_DARK};
+    background-color: {t.bg_secondary};
 }}
 QMessageBox QLabel {{
-    color: {TEXT};
+    color: {t.fg_primary};
 }}
 """
