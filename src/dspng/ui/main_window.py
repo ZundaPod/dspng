@@ -13,11 +13,12 @@ Layout (all panels resizable via splitters):
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtGui import QAction, QActionGroup, QIcon
 from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
@@ -55,6 +56,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("dspng — PSD → PNG")
         self.resize(1200, 800)
+        self._set_window_icon()
 
         # Load persisted settings and apply theme.
         self._settings = load()
@@ -82,6 +84,24 @@ class MainWindow(QMainWindow):
         # Menu bar
         self._setup_file_menu()
         self._setup_view_menu()
+
+    # ------------------------------------------------------------------
+    # Icon
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _set_window_icon():
+        """Set the window/taskbar icon from icon.ico."""
+        if getattr(sys, "frozen", False):
+            base = Path(sys.executable).parent
+        else:
+            base = Path(__file__).resolve().parent.parent.parent
+        icon_path = base / "icon.ico"
+        if icon_path.exists():
+            from PySide6.QtWidgets import QApplication
+            app = QApplication.instance()
+            if app is not None:
+                app.setWindowIcon(QIcon(str(icon_path)))
 
     # ------------------------------------------------------------------
     # Theme
