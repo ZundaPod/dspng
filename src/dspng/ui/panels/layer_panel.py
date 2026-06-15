@@ -231,8 +231,8 @@ class LayerTreeModel(QAbstractItemModel):
         children: list[TreeItem] = []
         if isinstance(item, LayerGroup):
             children = item.children
-        # Reverse so the GUI displays layers top-to-bottom (Photoshop order).
-        # The underlying data model stays bottom-to-top for compositing.
+        # Rebuild wrappers from scratch (reversed for display order).
+        wrapper.children_wrappers.clear()
         for child in reversed(children):
             child_w = _TreeItemWrapper(child, parent_wrapper=wrapper)
             wrapper.children_wrappers.append(child_w)
@@ -337,7 +337,7 @@ class LayerTreeModel(QAbstractItemModel):
             return False
         wrapper: _TreeItemWrapper = index.internalPointer()
         parent_w = wrapper.parent_wrapper
-        if parent_w is None or parent_w is self._root:
+        if parent_w is None:
             return False
 
         children = parent_w.item.children
@@ -349,7 +349,7 @@ class LayerTreeModel(QAbstractItemModel):
         children[idx], children[target] = children[target], children[idx]
         self._populate_children(parent_w)
         self.invalidate_all_thumbnails()
-        self.layoutChanged.emit([], [])
+        self.layoutChanged.emit()
         return True
 
     def flags(self, index: QModelIndex):
@@ -436,7 +436,7 @@ class LayerTreeModel(QAbstractItemModel):
         self._populate_children(dest_wrapper)
 
         self.invalidate_all_thumbnails()
-        self.layoutChanged.emit([], [])
+        self.layoutChanged.emit()
         return True
 
 
