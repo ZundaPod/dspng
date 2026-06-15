@@ -98,12 +98,12 @@ QScrollBar:vertical {{
     margin: 0;
 }}
 QScrollBar::handle:vertical {{
-    background: {t.bg_tertiary};
+    background: {t.accent};
     border-radius: 4px;
     min-height: 20px;
 }}
 QScrollBar::handle:vertical:hover {{
-    background: {t.border};
+    background: {t.accent_hover};
 }}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
     height: 0;
@@ -114,12 +114,12 @@ QScrollBar:horizontal {{
     margin: 0;
 }}
 QScrollBar::handle:horizontal {{
-    background: {t.bg_tertiary};
+    background: {t.accent};
     border-radius: 4px;
     min-width: 20px;
 }}
 QScrollBar::handle:horizontal:hover {{
-    background: {t.border};
+    background: {t.accent_hover};
 }}
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
     width: 0;
