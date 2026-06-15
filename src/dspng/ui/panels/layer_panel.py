@@ -325,6 +325,33 @@ class LayerTreeModel(QAbstractItemModel):
             return True
         return False
 
+    def move_item(self, index: QModelIndex, direction: int) -> bool:
+        """Swap *index* with its sibling *direction* positions away.
+
+        ``direction`` = -1 means "move up" in the data model (which is the
+        top of the display list) and +1 means "move down".
+
+        Returns True if the swap happened.
+        """
+        if not index.isValid():
+            return False
+        wrapper: _TreeItemWrapper = index.internalPointer()
+        parent_w = wrapper.parent_wrapper
+        if parent_w is None or parent_w is self._root:
+            return False
+
+        children = parent_w.item.children
+        idx = children.index(wrapper.item)
+        target = idx + direction
+        if target < 0 or target >= len(children):
+            return False
+
+        children[idx], children[target] = children[target], children[idx]
+        self._populate_children(parent_w)
+        self.invalidate_all_thumbnails()
+        self.layoutChanged.emit([], [])
+        return True
+
     def flags(self, index: QModelIndex):
         if not index.isValid():
             return Qt.ItemFlag.NoItemFlags
@@ -472,6 +499,18 @@ class LayerPanel(QWidget):
 
         layout.addWidget(self._tree, stretch=1)
 
+        # --- Up / Down buttons ---
+        from PySide6.QtWidgets import QPushButton
+
+        btn_row = QHBoxLayout()
+        self._btn_up = QPushButton("↑ Up")
+        self._btn_down = QPushButton("↓ Down")
+        self._btn_up.clicked.connect(lambda: self._move_selected(1))
+        self._btn_down.clicked.connect(lambda: self._move_selected(-1))
+        btn_row.addWidget(self._btn_up)
+        btn_row.addWidget(self._btn_down)
+        layout.addLayout(btn_row)
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -493,6 +532,17 @@ class LayerPanel(QWidget):
             self._refresh_tree_decorations()
         self.layer_visibility_changed.emit()
         self.thumbnail_changed.emit()
+
+    def _move_selected(self, direction: int):
+        """Move the selected layer/group up (-1) or down (+1) in its parent."""
+        indexes = self._tree.selectedIndexes()
+        if not indexes:
+            return
+        idx = indexes[0]
+        if self._model.move_item(idx, direction):
+            self.layer_order_changed.emit()
+            self.layer_visibility_changed.emit()
+            self.thumbnail_changed.emit()
 
     # ------------------------------------------------------------------
     # Tree decoration refresh

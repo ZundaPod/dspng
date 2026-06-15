@@ -172,6 +172,13 @@ class RenderCanvas(QGraphicsView):
         self._drag_started = False
         super().mouseReleaseEvent(event)
 
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
+        """Double-click: fit the entire image into the viewport."""
+        if self._pixmap_item is not None:
+            self.fitInView(self._scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+            self._zoom = self.transform().m11()
+        event.accept()
+
     # ------------------------------------------------------------------
     # Drag-to-export
     # ------------------------------------------------------------------
