@@ -15,9 +15,19 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication
 
 
+def _import_local():
+    """Import MainWindow and DocumentStore, handling both package and script contexts."""
+    try:
+        from .ui.main_window import MainWindow
+        from .psd_manager import DocumentStore
+    except ImportError:
+        from dspng.ui.main_window import MainWindow
+        from dspng.psd_manager import DocumentStore
+    return MainWindow, DocumentStore
+
+
 def main() -> int:
-    # Late import so the module is importable without a display for testing.
-    from .ui.main_window import MainWindow
+    MainWindow, DocumentStore = _import_local()
 
     app = QApplication(sys.argv)
 
@@ -34,9 +44,6 @@ def main() -> int:
     if len(args) > 1:
         psd_path = Path(args[1])
         if psd_path.suffix.lower() == ".psd" and psd_path.is_file():
-            from .psd_manager import DocumentStore  # noqa: already created inside window
-
-            # The store lives inside the window; trigger the open flow.
             window._store.add_document(psd_path)
             window._file_list.refresh()
             doc = window._store.selected_document

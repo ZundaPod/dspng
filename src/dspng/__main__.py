@@ -1,5 +1,8 @@
 """Allow running as: python -m dspng"""
 
-from .main import main
+try:
+    from .main import main
+except ImportError:
+    from dspng.main import main
 
 raise SystemExit(main())
