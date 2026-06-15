@@ -23,7 +23,7 @@ QMainWindow, QWidget {{
 
 /* ---- Frames / panels ---- */
 QFrame[frameShape="6"] {{
-    background-color: {t.bg_secondary};
+    background-color: {t.bg_primary};
     border: 1px solid {t.border};
     border-radius: 2px;
 }}
@@ -63,7 +63,7 @@ QPushButton:checked {{
 
 /* ---- Tree / List views ---- */
 QTreeView, QListView {{
-    background-color: {t.bg_secondary};
+    background-color: {t.bg_primary};
     alternate-background-color: {t.bg_primary};
     border: 1px solid {t.border};
     outline: none;
@@ -134,7 +134,7 @@ QCheckBox::indicator {{
     height: 14px;
     border: 1px solid {t.border};
     border-radius: 2px;
-    background-color: {t.bg_secondary};
+    background-color: {t.bg_primary};
 }}
 QCheckBox::indicator:checked {{
     background-color: {t.accent};
@@ -166,7 +166,7 @@ QMenuBar::item:selected {{
     background-color: {t.bg_tertiary};
 }}
 QMenu {{
-    background-color: {t.bg_secondary};
+    background-color: {t.bg_primary};
     color: {t.fg_primary};
     border: 1px solid {t.border};
 }}
@@ -199,7 +199,7 @@ QSlider::handle:horizontal:hover {{
 
 /* ---- Tooltip ---- */
 QToolTip {{
-    background-color: {t.bg_secondary};
+    background-color: {t.bg_primary};
     color: {t.fg_primary};
     border: 1px solid {t.border};
     padding: 4px;
@@ -208,7 +208,7 @@ QToolTip {{
 
 /* ---- Message box ---- */
 QMessageBox {{
-    background-color: {t.bg_secondary};
+    background-color: {t.bg_primary};
 }}
 QMessageBox QLabel {{
     color: {t.fg_primary};
