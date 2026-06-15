@@ -251,7 +251,7 @@ class MainWindow(QMainWindow):
     def _setup_help_menu(self):
         menu = self.menuBar().addMenu("&Help")
 
-        act_shortcuts = QAction("&Keyboard Shortcuts", self)
+        act_shortcuts = QAction("&Shortcuts", self)
         act_shortcuts.setShortcut("F1")
         act_shortcuts.triggered.connect(self._on_shortcuts)
         menu.addAction(act_shortcuts)
