@@ -44,6 +44,7 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          token: ${{ secrets.PAT }}
 
       - name: Install git-cliff
         uses: kenji-miyake/setup-git-cliff@v2
@@ -66,4 +67,4 @@ jobs:
         with:
           commit_sha: ${{ steps.add-changelog.outputs.commit_long_sha }}
           custom_tag: ${{ needs.check-version.outputs.version }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.PAT }}
