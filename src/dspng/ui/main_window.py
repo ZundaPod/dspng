@@ -20,8 +20,11 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QFileDialog,
+    QFrame,
     QHBoxLayout,
+    QLabel,
     QMainWindow,
+    QMessageBox,
     QSplitter,
     QVBoxLayout,
     QWidget,
@@ -66,6 +69,26 @@ class MainWindow(QMainWindow):
     # Layout
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _make_panel(title: str, widget: QWidget) -> QWidget:
+        """Wrap *widget* in a container with a title label and border."""
+        container = QFrame()
+        container.setFrameShape(QFrame.Shape.StyledPanel)
+        container.setStyleSheet(
+            "QFrame { border: 1px solid #444; border-radius: 3px; }"
+        )
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(2)
+
+        label = QLabel(title)
+        label.setStyleSheet(
+            "font-weight: bold; font-size: 11px; color: #aaa; padding: 2px 4px;"
+        )
+        layout.addWidget(label)
+        layout.addWidget(widget, stretch=1)
+        return container
+
     def _setup_layout(self):
         central = QWidget()
         self.setCentralWidget(central)
@@ -76,13 +99,13 @@ class MainWindow(QMainWindow):
         h_splitter = QSplitter(Qt.Orientation.Horizontal)
 
         # Left: render canvas
-        h_splitter.addWidget(self._canvas)
+        h_splitter.addWidget(self._make_panel("Render", self._canvas))
         h_splitter.setStretchFactor(0, 3)  # canvas gets 3/4 of space
 
         # Right column: vertical splitter (file list on top, layers on bottom)
         v_splitter = QSplitter(Qt.Orientation.Vertical)
-        v_splitter.addWidget(self._file_list)
-        v_splitter.addWidget(self._layer_panel)
+        v_splitter.addWidget(self._make_panel("Files", self._file_list))
+        v_splitter.addWidget(self._make_panel("Layers", self._layer_panel))
         v_splitter.setStretchFactor(0, 1)  # file list gets 1/3
         v_splitter.setStretchFactor(1, 2)  # layer panel gets 2/3
 

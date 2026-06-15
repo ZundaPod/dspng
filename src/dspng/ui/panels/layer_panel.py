@@ -457,12 +457,14 @@ class LayerPanel(QWidget):
     # Emitted when a visibility change should refresh the file list thumbnail.
     thumbnail_changed = Signal()
 
-    # Fixed thumbnail size for the layer tree.
-    _THUMB_SIZE = (20, 20)  # ~row height (24px) minus padding
+    # Available row height presets.
+    _SIZE_PRESETS = [20, 32, 48]
+    _SIZE_LABELS = {20: "S", 32: "M", 48: "L"}
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._doc: Optional[PsdDocument] = None
+        self._thumb_size = self._SIZE_PRESETS[0]  # default: S
         self._setup_ui()
 
     def _setup_ui(self):
@@ -500,17 +502,34 @@ class LayerPanel(QWidget):
 
         layout.addWidget(self._tree, stretch=1)
 
-        # --- Up / Down buttons ---
+        # --- Bottom row: size presets + up/down buttons ---
         from PySide6.QtWidgets import QPushButton
 
-        btn_row = QHBoxLayout()
+        bottom_row = QHBoxLayout()
+        self._size_buttons: list[QPushButton] = []
+        for px in self._SIZE_PRESETS:
+            label = self._SIZE_LABELS.get(px, str(px))
+            btn = QPushButton(label)
+            btn.setFixedWidth(30)
+            btn.setCheckable(True)
+            if px == self._thumb_size:
+                btn.setChecked(True)
+            btn.clicked.connect(lambda checked, s=px: self._set_size(s))
+            bottom_row.addWidget(btn)
+            self._size_buttons.append(btn)
+
+        bottom_row.addStretch()
+
         self._btn_up = QPushButton("↑ Up")
         self._btn_down = QPushButton("↓ Down")
         self._btn_up.clicked.connect(lambda: self._move_selected(1))
         self._btn_down.clicked.connect(lambda: self._move_selected(-1))
-        btn_row.addWidget(self._btn_up)
-        btn_row.addWidget(self._btn_down)
-        layout.addLayout(btn_row)
+        bottom_row.addWidget(self._btn_up)
+        bottom_row.addWidget(self._btn_down)
+        layout.addLayout(bottom_row)
+
+        # Apply initial icon size.
+        self._apply_icon_size()
 
     # ------------------------------------------------------------------
     # Public API
@@ -529,21 +548,62 @@ class LayerPanel(QWidget):
     def _on_visibility_toggled(self):
         """Called when a checkbox is toggled in the delegate."""
         if self._doc is not None:
-            self._model.refresh_thumbnails_for_size(self._THUMB_SIZE)
+            size = (self._thumb_size, self._thumb_size)
+            self._model.refresh_thumbnails_for_size(size)
             self._refresh_tree_decorations()
         self.layer_visibility_changed.emit()
         self.thumbnail_changed.emit()
 
+    def _set_size(self, px: int):
+        """Switch to a new thumbnail/row size."""
+        if px == self._thumb_size:
+            return
+        self._thumb_size = px
+        self._apply_icon_size()
+
+        # Invalidate cached thumbnails.
+        for doc_items in ([self._doc] if self._doc else []):
+            doc_items.invalidate_thumbnail()
+        if self._doc is not None:
+            self._model.invalidate_all_thumbnails()
+            size = (px, px)
+            self._model.refresh_thumbnails_for_size(size)
+        self._refresh_tree_decorations()
+
+        # Update button checked state.
+        label = self._SIZE_LABELS.get(px, str(px))
+        for btn in self._size_buttons:
+            btn.setChecked(btn.text() == label)
+
+    def _apply_icon_size(self):
+        """Set the tree view's icon size from current thumb size."""
+        from PySide6.QtCore import QSize
+        px = self._thumb_size
+        self._tree.setIconSize(QSize(px, px))
+
     def _move_selected(self, direction: int):
-        """Move the selected layer/group up (-1) or down (+1) in its parent."""
+        """Move the selected layer/group up (+1) or down (-1) in its parent."""
         indexes = self._tree.selectedIndexes()
         if not indexes:
             return
         idx = indexes[0]
+        # Remember the item name so we can re-select after model reset.
+        name = idx.data(Qt.ItemDataRole.DisplayRole)
         if self._model.move_item(idx, direction):
+            # Restore selection.
+            self._select_by_name(name)
             self.layer_order_changed.emit()
             self.layer_visibility_changed.emit()
             self.thumbnail_changed.emit()
+
+    def _select_by_name(self, name: str):
+        """Find a top-level item by display name and select it."""
+        model = self._model
+        for row in range(model.rowCount()):
+            idx = model.index(row, 0)
+            if idx.data(Qt.ItemDataRole.DisplayRole) == name:
+                self._tree.setCurrentIndex(idx)
+                return
 
     # ------------------------------------------------------------------
     # Tree decoration refresh
