@@ -89,19 +89,20 @@ class MainWindow(QMainWindow):
     # Icon
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def _set_window_icon():
+    def _set_window_icon(self):
         """Set the window/taskbar icon from icon.ico."""
         if getattr(sys, "frozen", False):
             base = Path(sys.executable).parent
         else:
-            base = Path(__file__).resolve().parent.parent.parent
+            base = Path(__file__).resolve().parent.parent.parent.parent
         icon_path = base / "icon.ico"
         if icon_path.exists():
+            icon = QIcon(str(icon_path))
+            self.setWindowIcon(icon)
             from PySide6.QtWidgets import QApplication
             app = QApplication.instance()
             if app is not None:
-                app.setWindowIcon(QIcon(str(icon_path)))
+                app.setWindowIcon(icon)
 
     # ------------------------------------------------------------------
     # Theme

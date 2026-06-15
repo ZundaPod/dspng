@@ -28,30 +28,30 @@ def create_icon(size: int) -> Image.Image:
 
     # -- Layer stack: 3 offset rectangles representing PSD layers --
     layer_colors = [
-        (87, 195, 194, 120),   # Shilv teal, translucent
-        (102, 169, 201, 180),  # Jianshilan blue, semi-opaque
-        (248, 244, 237, 255),  # Hanbaiyu white, opaque (the "P")
+        (87, 195, 194, 130),   # Shilv teal
+        (102, 169, 201, 190),  # Jianshilan blue
+        (248, 244, 237, 255),  # Hanbaiyu white (the "P")
     ]
 
-    # Use most of the canvas — small margin.
-    margin = size * 0.10
-    layer_w = size - 2 * margin
-    layer_h = size * 0.28  # each layer takes ~28% of height
-    offset_step = size * 0.07
+    # Tight margins — elements fill almost the entire canvas.
+    m = size * 0.06
+    layer_w = size - 2 * m
+    layer_h = size * 0.32
+    step = size * 0.09
 
     for i, color in enumerate(layer_colors):
-        y_top = margin + i * offset_step
+        y_top = m + i * step
         y_bot = y_top + layer_h
-        x_left = margin + (2 - i) * offset_step * 0.4
-        x_right = x_left + layer_w - (2 - i) * offset_step * 0.8
+        x_left = m + (2 - i) * step * 0.3
+        x_right = x_left + layer_w - (2 - i) * step * 0.6
         draw.rounded_rectangle(
             [(x_left, y_top), (x_right, y_bot)],
-            radius=max(2, size // 20),
+            radius=max(2, size // 16),
             fill=color,
         )
 
-    # -- Letter "P" on the top (white) layer, filling most of it --
-    font_size = int(layer_h * 1.1)
+    # -- Letter "P" on the top (white) layer, filling it --
+    font_size = int(layer_h * 1.2)
     try:
         font = ImageFont.truetype("arialbd.ttf", font_size)
     except (OSError, IOError):
@@ -60,14 +60,13 @@ def create_icon(size: int) -> Image.Image:
         except (OSError, IOError):
             font = ImageFont.load_default()
 
-    p_color = (16, 31, 48, 255)  # dark on white
+    p_color = (16, 31, 48, 255)
     text = "P"
     bbox = draw.textbbox((0, 0), text, font=font)
     tw = bbox[2] - bbox[0]
     th = bbox[3] - bbox[1]
     tx = (size - tw) / 2
-    # Vertically center within the top layer rectangle.
-    top_layer_y = margin + 2 * offset_step
+    top_layer_y = m + 2 * step
     ty = top_layer_y + (layer_h - th) / 2 - bbox[1]
     draw.text((tx, ty), text, fill=p_color, font=font)
 
@@ -78,7 +77,6 @@ def main():
     sizes = [16, 24, 32, 48, 64, 128, 256]
     images = [create_icon(s) for s in sizes]
 
-    # Save as .ico (multi-size)
     ico_path = "icon.ico"
     images[-1].save(
         ico_path,
@@ -88,7 +86,6 @@ def main():
     )
     print(f"Saved {ico_path}")
 
-    # Save PNG preview
     png_path = "icon.png"
     images[-1].save(png_path)
     print(f"Saved {png_path}")
