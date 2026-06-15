@@ -92,11 +92,11 @@ class MainWindow(QMainWindow):
     def _set_window_icon(self):
         """Set the window/taskbar icon."""
         if getattr(sys, "frozen", False):
-            base = Path(sys.executable).parent
+            # PyInstaller extracts embedded data to sys._MEIPASS.
+            base = Path(sys._MEIPASS)
         else:
             base = Path(__file__).resolve().parent.parent.parent.parent
 
-        # Try ICO first, fall back to PNG.
         for name in ("icon.ico", "icon.png"):
             icon_path = base / name
             if icon_path.exists():

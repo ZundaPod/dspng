@@ -57,6 +57,7 @@ def build_qt() -> int:
         "--distpath", str(DIST_DIR),
         "--workpath", str(BUILD_DIR),
         "--clean",
+        f"--add-data={icon};.",
         str(SRC_DSPNG / "main.py"),
     ]
     if icon.exists():
