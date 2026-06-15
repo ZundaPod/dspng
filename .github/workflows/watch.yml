@@ -22,9 +22,13 @@ jobs:
             pyproject.toml
 
   check:
-    runs-on: ubuntu-latest
     needs: check-changed
     if: needs.check-changed.outputs.modified == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
