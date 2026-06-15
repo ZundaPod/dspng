@@ -84,6 +84,7 @@ class MainWindow(QMainWindow):
         # Menu bar
         self._setup_file_menu()
         self._setup_view_menu()
+        self._setup_help_menu()
 
     # ------------------------------------------------------------------
     # Icon
@@ -242,6 +243,29 @@ class MainWindow(QMainWindow):
         self._settings["accent"] = accent.value
         save(self._settings)
         self._apply_theme()
+
+    # ------------------------------------------------------------------
+    # Help menu
+    # ------------------------------------------------------------------
+
+    def _setup_help_menu(self):
+        menu = self.menuBar().addMenu("&Help")
+
+        act_about = QAction("&About", self)
+        act_about.triggered.connect(self._on_about)
+        menu.addAction(act_about)
+
+    def _on_about(self):
+        QMessageBox.about(
+            self,
+            "About dspng",
+            "<h2>dspng</h2>"
+            "<p>A standalone tool for rendering PSD files to PNG<br>"
+            "without launching Photoshop.</p>"
+            "<p><b>Author:</b> johanvx (<a href='https://github.com/johanvx'>github.com/johanvx</a>)</p>"
+            "<p><b>Source:</b> <a href='https://github.com/ZundaPod/dspng'>github.com/ZundaPod/dspng</a></p>"
+            "<p><b>License:</b> GPL-2.0 (<a href='https://spdx.org/licenses/GPL-2.0-only.html'>spdx.org</a>)</p>",
+        )
 
     # ------------------------------------------------------------------
     # Slots
