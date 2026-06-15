@@ -113,6 +113,7 @@ class FileListPanel(QWidget):
 
         # --- Bottom row: size presets + add/remove buttons ---
         bottom_row = QHBoxLayout()
+        self._size_buttons: list[QPushButton] = []
 
         # Size preset buttons (S / M / L).
         for px in _SIZE_PRESETS:
@@ -124,6 +125,7 @@ class FileListPanel(QWidget):
                 btn.setChecked(True)
             btn.clicked.connect(lambda checked, s=px: self._set_size(s))
             bottom_row.addWidget(btn)
+            self._size_buttons.append(btn)
 
         bottom_row.addStretch()
 
