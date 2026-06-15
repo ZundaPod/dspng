@@ -169,6 +169,7 @@ class LayerTreeModel(QAbstractItemModel):
         self._root = _TreeItemWrapper(
             LayerGroup(name="__root__", children=[])
         )
+        self._thumb_size = 64  # default, updated by LayerPanel
 
     # ------------------------------------------------------------------
     # Public API
@@ -286,11 +287,12 @@ class LayerTreeModel(QAbstractItemModel):
             return None
 
         if role == Qt.ItemDataRole.DecorationRole and col == 0:
+            size = (self._thumb_size, self._thumb_size)
             if isinstance(item, LayerNode):
-                thumb = generate_layer_thumbnail(item)
+                thumb = generate_layer_thumbnail(item, size)
             elif isinstance(item, LayerGroup):
                 if self._doc is not None:
-                    thumb = generate_group_thumbnail(item, self._doc)
+                    thumb = generate_group_thumbnail(item, self._doc, size)
                 else:
                     return None
             else:
@@ -464,7 +466,7 @@ class LayerPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._doc: Optional[PsdDocument] = None
-        self._thumb_size = self._SIZE_PRESETS[0]  # default: S
+        self._thumb_size = self._SIZE_PRESETS[1]  # default: M
         self._setup_ui()
 
     def _setup_ui(self):
@@ -559,6 +561,7 @@ class LayerPanel(QWidget):
         if px == self._thumb_size:
             return
         self._thumb_size = px
+        self._model._thumb_size = px
         self._apply_icon_size()
 
         # Invalidate cached thumbnails.
