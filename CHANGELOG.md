@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
-## [unreleased]
+## [1.0.0] — 2026-06-15
 
 ### Bug Fixes
 
@@ -20,10 +20,20 @@ All notable changes to this project will be documented in this file.
 - Embed icon.ico in PyInstaller bundle via --add-data
 - Shorten Help menu item to 'Shortcuts'
 - Add horizontal dividers between shortcut sections
+- Cross-platform build script (--add-data separator, output suffix)
 
 ### Build
 
 - Init Python project with uv and dependencies
+
+### CI/CD
+
+- Add GitHub Actions for CI and release
+- GitHub Actions — CI, tag, release, cleanup workflows
+- Rename ci.yml to watch.yml to match convention
+- Watch workflow runs on Windows/macOS/Linux matrix
+- Use PAT in tag workflow to trigger release workflow
+- Use scripts/build.py in release workflow
 
 ### Documentation
 
@@ -48,6 +58,11 @@ All notable changes to this project will be documented in this file.
 - Scrollbar handle uses accent color
 - Help > About dialog with author, source, license info
 - Help > Keyboard Shortcuts dialog (F1)
+
+### Miscellaneous
+
+- Add git-cliff configuration and CHANGELOG.md
+- Update gitignore and add pyinstaller to dev deps
 
 ### Refactoring
 
