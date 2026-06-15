@@ -131,8 +131,11 @@ class FileListPanel(QWidget):
 
         self._btn_add = QPushButton("+ Add")
         self._btn_remove = QPushButton("− Remove")
+        self._btn_reload = QPushButton("Reload")
         self._btn_add.clicked.connect(self._on_add)
         self._btn_remove.clicked.connect(self._on_remove)
+        self._btn_reload.clicked.connect(self._on_reload)
+        bottom_row.addWidget(self._btn_reload)
         bottom_row.addWidget(self._btn_add)
         bottom_row.addWidget(self._btn_remove)
 
@@ -226,6 +229,27 @@ class FileListPanel(QWidget):
             self.document_selected.emit(
                 self._store.selected_index if self._store.selected_index is not None else -1
             )
+
+    def _on_reload(self):
+        """Re-read the currently selected PSD file from disk."""
+        idx = self._store.selected_index
+        if idx is None:
+            return
+        doc = self._store.selected_document
+        if doc is None:
+            return
+        path = doc.path
+        # Remove and re-add to trigger a fresh parse.
+        self._store.remove_document(idx)
+        try:
+            self._store.add_document(path)
+        except Exception as e:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Reload Error", f"Failed to reload {path.name}: {e}")
+            return
+        self._model.refresh()
+        if self._store.selected_index is not None:
+            self.document_selected.emit(self._store.selected_index)
 
     def refresh(self):
         self._model.refresh()

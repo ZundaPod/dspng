@@ -576,10 +576,14 @@ class LayerPanel(QWidget):
             btn.setChecked(btn.text() == label)
 
     def _apply_icon_size(self):
-        """Set the tree view's icon size from current thumb size."""
+        """Set the tree view's icon size and row height from current thumb size."""
         from PySide6.QtCore import QSize
         px = self._thumb_size
         self._tree.setIconSize(QSize(px, px))
+        # Row height is controlled via stylesheet alongside iconSize.
+        self._tree.setStyleSheet(
+            f"QTreeView::item {{ height: {px}px; min-height: {px}px; padding: 1px; }}"
+        )
 
     def _move_selected(self, direction: int):
         """Move the selected layer/group up (+1) or down (-1) in its parent."""
