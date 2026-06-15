@@ -75,19 +75,19 @@ class RenderCanvas(QGraphicsView):
     # ------------------------------------------------------------------
 
     def set_document(self, doc: Optional[PsdDocument]):
-        """Display a new document (or None to clear)."""
+        """Display a new document (or None to clear).  Fits to view."""
         self._doc = doc
-        self._rebuild_scene()
+        self._rebuild_scene(fit=True)
 
     def refresh_composite(self):
-        """Re-composite and re-display the current document."""
-        self._rebuild_scene()
+        """Re-composite and re-display, keeping current zoom and pan."""
+        self._rebuild_scene(fit=False)
 
     # ------------------------------------------------------------------
     # Scene management
     # ------------------------------------------------------------------
 
-    def _rebuild_scene(self):
+    def _rebuild_scene(self, fit: bool = True):
         self._scene.clear()
         self._pixmap_item = None
 
@@ -100,9 +100,9 @@ class RenderCanvas(QGraphicsView):
         self._pixmap_item = self._scene.addPixmap(pixmap)
         self._scene.setSceneRect(QRectF(pixmap.rect()))
 
-        # Fit in view on first display.
-        self.fitInView(self._scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
-        self._zoom = self.transform().m11()
+        if fit:
+            self.fitInView(self._scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
+            self._zoom = self.transform().m11()
 
     # ------------------------------------------------------------------
     # Zoom
