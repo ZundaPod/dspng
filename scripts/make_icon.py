@@ -1,57 +1,56 @@
 """
 Generate dspng app icon.
 
-Design concept:
-  - The letter "P" is shared between PSD and PNG
-  - Stacked layers represent PSD's layer structure
-  - The bottom layer is solid = the final PNG output
-  - Dark background matches the app's dark theme
-  - Accent color from the lettepa palette (Jianshilan blue)
+Design:
+  - Three stacked layers fill the canvas (PSD layer metaphor)
+  - Letter "P" on the top white layer (shared between PSD and PNG)
+  - Dark rounded background from lettepa palette
 """
 
 from PIL import Image, ImageDraw, ImageFont
 
 
 def create_icon(size: int) -> Image.Image:
-    """Create a single icon at the given square size."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # -- Background: dark rounded rectangle --
-    bg_color = (16, 31, 48, 255)  # Anlan (#101f30)
-    radius = size // 5
+    # Background
     draw.rounded_rectangle(
         [(0, 0), (size - 1, size - 1)],
-        radius=radius,
-        fill=bg_color,
+        radius=size // 5,
+        fill=(16, 31, 48, 255),
     )
 
-    # -- Layer stack: 3 offset rectangles representing PSD layers --
-    layer_colors = [
-        (87, 195, 194, 130),   # Shilv teal
-        (102, 169, 201, 190),  # Jianshilan blue
-        (248, 244, 237, 255),  # Hanbaiyu white (the "P")
+    # Three layers: teal → blue → white
+    colors = [
+        (87, 195, 194, 130),
+        (102, 169, 201, 190),
+        (248, 244, 237, 255),
     ]
 
-    # Tight margins — elements fill almost the entire canvas.
-    m = size * 0.06
-    layer_w = size - 2 * m
-    layer_h = size * 0.32
-    step = size * 0.09
+    # Layout: layers span from 5% to 95% of canvas.
+    # Each layer is ~44% tall, with ~20% step between them.
+    layer_h_frac = 0.44
+    step_frac = 0.22
+    top_margin_frac = 0.04
 
-    for i, color in enumerate(layer_colors):
-        y_top = m + i * step
-        y_bot = y_top + layer_h
-        x_left = m + (2 - i) * step * 0.3
-        x_right = x_left + layer_w - (2 - i) * step * 0.6
+    for i, color in enumerate(colors):
+        y0 = size * (top_margin_frac + i * step_frac)
+        y1 = y0 + size * layer_h_frac
+        # Each successive layer is slightly narrower (offset effect).
+        indent = (2 - i) * size * 0.03
+        x0 = 4 + indent
+        x1 = size - 4 - indent
         draw.rounded_rectangle(
-            [(x_left, y_top), (x_right, y_bot)],
-            radius=max(2, size // 16),
+            [(x0, y0), (x1, y1)],
+            radius=max(2, size // 14),
             fill=color,
         )
 
-    # -- Letter "P" on the top (white) layer, filling it --
-    font_size = int(layer_h * 1.2)
+    # Letter "P" on the top layer, filling most of it.
+    top_y = size * (top_margin_frac + 2 * step_frac)
+    top_h = size * layer_h_frac
+    font_size = int(top_h * 1.15)
     try:
         font = ImageFont.truetype("arialbd.ttf", font_size)
     except (OSError, IOError):
@@ -60,15 +59,12 @@ def create_icon(size: int) -> Image.Image:
         except (OSError, IOError):
             font = ImageFont.load_default()
 
-    p_color = (16, 31, 48, 255)
     text = "P"
     bbox = draw.textbbox((0, 0), text, font=font)
-    tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     tx = (size - tw) / 2
-    top_layer_y = m + 2 * step
-    ty = top_layer_y + (layer_h - th) / 2 - bbox[1]
-    draw.text((tx, ty), text, fill=p_color, font=font)
+    ty = top_y + (top_h - th) / 2 - bbox[1]
+    draw.text((tx, ty), text, fill=(16, 31, 48, 255), font=font)
 
     return img
 
@@ -77,18 +73,16 @@ def main():
     sizes = [16, 24, 32, 48, 64, 128, 256]
     images = [create_icon(s) for s in sizes]
 
-    ico_path = "icon.ico"
     images[-1].save(
-        ico_path,
+        "icon.ico",
         format="ICO",
         sizes=[(s, s) for s in sizes],
         append_images=images[:-1],
     )
-    print(f"Saved {ico_path}")
+    print("Saved icon.ico")
 
-    png_path = "icon.png"
-    images[-1].save(png_path)
-    print(f"Saved {png_path}")
+    images[-1].save("icon.png")
+    print("Saved icon.png")
 
 
 if __name__ == "__main__":
