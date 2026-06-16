@@ -38,6 +38,7 @@ def _extract_layer(psd_layer) -> Optional[LayerNode]:
         opacity=(psd_layer.opacity or 255) / 255.0,
         blend_mode=str(psd_layer.blend_mode or "normal").lower(),
         original_index=0,  # Will be set by the caller
+        _psd_ref=psd_layer,
     )
 
 
@@ -65,6 +66,7 @@ def _extract_group(psd_group) -> LayerGroup:
         opacity=(psd_group.opacity or 255) / 255.0,
         original_index=0,
         open_folder=getattr(psd_group, "open_folder", True),
+        _psd_ref=psd_group,
     )
 
 

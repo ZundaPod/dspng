@@ -36,6 +36,9 @@ class LayerNode:
     blend_mode: str = "normal"
     original_index: int = 0
 
+    # Back-reference to original psd-tools layer for save-time sync.
+    _psd_ref: Any = field(default=None, repr=False)
+
     # Thumbnail cache — lazily populated by the renderer.
     thumbnail: Optional[Image.Image] = field(default=None, repr=False)
 
@@ -65,6 +68,9 @@ class LayerGroup:
     opacity: float = 1.0
     original_index: int = 0
     open_folder: bool = True  # from PSD section divider (expanded by default)
+
+    # Back-reference to original psd-tools group for save-time sync.
+    _psd_ref: Any = field(default=None, repr=False)
 
     # Thumbnail cache — lazily populated by the renderer.
     thumbnail: Optional[Image.Image] = field(default=None, repr=False)

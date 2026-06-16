@@ -14,14 +14,12 @@ Supports:
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Optional
 
 from PySide6.QtCore import (
     QAbstractItemModel,
     QMimeData,
     QModelIndex,
-    QObject,
     QSize,
     Qt,
     Signal,
@@ -330,6 +328,9 @@ class LayerTreeModel(QAbstractItemModel):
             if item.visible == new_visible:
                 return True
             item.visible = new_visible
+            # Keep the real PSD object in sync for save.
+            if hasattr(item, "_psd_ref") and item._psd_ref is not None:
+                item._psd_ref.visible = new_visible
             # Invalidate cached thumbnails for the item and its ancestors.
             item.invalidate_thumbnail()
             pw = wrapper.parent_wrapper
@@ -730,8 +731,18 @@ class LayerPanel(QWidget):
                 return
 
     def _save_to_psd(self):
-        """Write current visibility and expand state back to the PSD file."""
-        if self._doc is None:
+        """Write all layer state (visibility, expand, order) back to PSD.
+
+        Syncs the full model tree to ``_doc._psd`` using ``_psd_ref``
+        back-references, then saves synchronously.  This avoids the
+        complexity of matching layers by name/path in a fresh-open worker
+        while keeping save fast (~0.8 s with ``_updated = False``).
+        """
+        if (
+            self._doc is None
+            or not hasattr(self._doc, "_psd")
+            or self._doc._psd is None
+        ):
             return
 
         reply = QMessageBox.question(
@@ -743,60 +754,63 @@ class LayerPanel(QWidget):
         if reply != QMessageBox.StandardButton.Yes:
             return
 
-        # Collect current visibility/expand state so the worker thread can
-        # apply it to a freshly-opened PSD without touching the model.
-        layers_visible = []
-        groups_open = {}
+        psd = self._doc._psd
 
-        def _collect_state(items, prefix=""):
-            for item in items:
-                path = f"{prefix}/{item.name}" if prefix else item.name
-                layers_visible.append((path, item.visible))
-                if isinstance(item, LayerGroup):
-                    groups_open[path] = item.open_folder
-                    _collect_state(item.children, path)
+        def _rebuild(target_list, psd_group):
+            """Rebuild *psd_group* children to match *target_list*.
 
-        _collect_state(self._doc.layer_tree)
+            Uses model items' ``_psd_ref`` for direct 1:1 mapping to
+            psd-tools objects, avoiding the duplicate-name problem of
+            a name-based lookup dict.
+            """
+            target_objs = []
+            for item in target_list:
+                obj = getattr(item, "_psd_ref", None)
+                if obj is not None:
+                    obj.visible = item.visible
+                    if isinstance(item, LayerGroup) and hasattr(obj, "open_folder"):
+                        obj.open_folder = item.open_folder
+                    if (
+                        hasattr(obj, "_parent")
+                        and obj._parent is not None
+                        and obj._parent is not psd_group
+                    ):
+                        obj._parent.remove(obj)
+                    target_objs.append(obj)
 
-        from PySide6.QtCore import QThread
+            # Clear stale children (those moved elsewhere are harmless
+            # — their new parent claims them via _psd_ref).
+            while len(list(psd_group)) > 0:
+                psd_group.pop(0)
+            for obj in reversed(target_objs):
+                psd_group.insert(0, obj)
 
-        self._save_thread = QThread(self)
-        self._save_worker = _PsdSaveWorker(self._doc.path, layers_visible, groups_open)
-        self._save_worker.moveToThread(self._save_thread)
-        self._save_thread.started.connect(self._save_worker.run)
-        self._save_worker.finished.connect(self._on_save_done)
-        self._save_worker.error.connect(self._on_save_error)
-        self._save_worker.finished.connect(self._save_thread.quit)
-        self._save_worker.error.connect(self._save_thread.quit)
-        self._save_thread.finished.connect(self._save_thread.deleteLater)
-        self._save_thread.finished.connect(self._save_worker.deleteLater)
-        self._save_thread.start()
+            # Recurse into groups.
+            for item, obj in zip(target_list, psd_group):
+                if isinstance(item, LayerGroup) and hasattr(obj, "_layers"):
+                    _rebuild(item.children, obj)
 
-        self._btn_save_psd.setEnabled(False)
-        from PySide6.QtWidgets import QProgressDialog
+        _rebuild(self._doc.layer_tree, psd)
 
-        self._progress = QProgressDialog(tr("Saving PSD..."), "", 0, 0, self)
-        self._progress.setWindowTitle(tr("Save to PSD"))
-        self._progress.setCancelButton(None)
-        self._progress.setWindowModality(Qt.WindowModal)
-        self._progress.show()
+        # Save synchronously (fast with _updated=False).
+        from PySide6.QtWidgets import QApplication
 
-    def _on_save_done(self):
-        self._progress.close()
-        self._btn_save_psd.setEnabled(True)
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            psd._updated = False
+            tmp = self._doc.path.with_suffix(".psd.tmp")
+            psd.save(tmp)
+            tmp.replace(self._doc.path)
+        except Exception as e:
+            QApplication.restoreOverrideCursor()
+            QMessageBox.critical(
+                self, tr("Save to PSD"), tr("Failed to save: ") + str(e)
+            )
+            return
+        finally:
+            QApplication.restoreOverrideCursor()
+
         QMessageBox.information(self, tr("Save to PSD"), tr("Saved successfully."))
-
-    def _on_save_error(self, msg: str):
-        self._progress.close()
-        self._btn_save_psd.setEnabled(True)
-        QMessageBox.warning(self, tr("Save to PSD"), tr("Failed to save: ") + msg)
-
-    def _apply_state_to_psd(self, psd_layer, our_item):
-        psd_layer.visible = our_item.visible
-        if hasattr(our_item, "children") and hasattr(psd_layer, "open_folder"):
-            psd_layer.open_folder = our_item.open_folder
-            for psd_child, our_child in zip(psd_layer, our_item.children):
-                self._apply_state_to_psd(psd_child, our_child)
 
     # ------------------------------------------------------------------
     # Tree decoration refresh
@@ -826,6 +840,8 @@ class LayerPanel(QWidget):
             and not getattr(self, "_loading", False)
         ):
             wrapper.item.open_folder = True
+            if hasattr(wrapper.item, "_psd_ref") and wrapper.item._psd_ref is not None:
+                wrapper.item._psd_ref.open_folder = True
 
     def _on_item_collapsed(self, index: QModelIndex):
         """Sync model open_folder when user collapses a group."""
@@ -836,6 +852,8 @@ class LayerPanel(QWidget):
             and not getattr(self, "_loading", False)
         ):
             wrapper.item.open_folder = False
+            if hasattr(wrapper.item, "_psd_ref") and wrapper.item._psd_ref is not None:
+                wrapper.item._psd_ref.open_folder = False
 
     def _expand_all(self):
         self._tree.expandAll()
@@ -940,58 +958,3 @@ class LayerPanel(QWidget):
             child_idx = model.index(row, 0, parent)
             if model.hasChildren(child_idx):
                 self._close_editors_recursive(child_idx)
-
-
-class _PsdSaveWorker(QObject):
-    """Runs psd.save() in a background thread without blocking the UI."""
-
-    finished = Signal()
-    error = Signal(str)
-
-    def __init__(
-        self,
-        path: Path,
-        layers_visible: list[tuple[str, bool]],
-        groups_open: dict[str, bool],
-    ):
-        super().__init__()
-        self._path = path
-        self._layers_visible = layers_visible
-        self._groups_open = groups_open
-
-    def run(self):
-        try:
-            from psd_tools import PSDImage
-
-            psd = PSDImage.open(self._path)
-            visible_map = {name: vis for name, vis in self._layers_visible}
-            open_map = self._groups_open
-
-            def _apply(psd_layers, prefix):
-                for psd_layer in psd_layers:
-                    layer_path = (
-                        f"{prefix}/{psd_layer.name}" if prefix else psd_layer.name
-                    )
-                    if layer_path in visible_map:
-                        psd_layer.visible = visible_map[layer_path]
-                    if layer_path in open_map:
-                        try:
-                            psd_layer.open_folder = open_map[layer_path]
-                        except AttributeError, ValueError:
-                            pass
-                    if hasattr(psd_layer, "_layers"):
-                        _apply(psd_layer, layer_path)
-
-            _apply(psd, "")
-            # Skip expensive preview-image recomposite; layer data is still
-            # written correctly and visibility/expand state is what matters.
-            psd._updated = False
-            tmp = self._path.with_suffix(".psd.tmp")
-            psd.save(tmp)
-            tmp.replace(self._path)
-            self.finished.emit()
-        except Exception as e:
-            self.error.emit(str(e))
-            import traceback
-
-            traceback.print_exc()
