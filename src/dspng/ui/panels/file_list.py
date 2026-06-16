@@ -25,12 +25,14 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QListView,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
 from ...psd_manager import DocumentStore
 from ...renderer import generate_doc_thumbnail
+from ..theme_tokens import SPACING_NONE
 
 # Available row height presets.
 _SIZE_PRESETS = [32, 64, 128]
@@ -96,7 +98,9 @@ class FileListPanel(QWidget):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(
+            SPACING_NONE, SPACING_NONE, SPACING_NONE, SPACING_NONE
+        )
 
         # --- Button row: size presets + add/remove buttons ---
         button_row = QHBoxLayout()
@@ -106,7 +110,7 @@ class FileListPanel(QWidget):
         for px in _SIZE_PRESETS:
             label = _SIZE_LABELS.get(px, str(px))
             btn = QPushButton(label)
-            btn.setFixedWidth(30)
+            btn.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
             btn.setCheckable(True)
             if px == self._current_size:
                 btn.setChecked(True)
@@ -132,6 +136,7 @@ class FileListPanel(QWidget):
         self._model = FileListModel(self._store, self._current_size)
         self._list_view = QListView()
         self._list_view.setModel(self._model)
+        self._list_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._list_view.setIconSize(QSize(self._current_size, self._current_size))
         self._list_view.setDragDropMode(QListView.DragDropMode.NoDragDrop)
         self._list_view.setSelectionMode(QListView.SelectionMode.SingleSelection)

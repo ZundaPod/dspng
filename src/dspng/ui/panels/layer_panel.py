@@ -29,6 +29,8 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QHBoxLayout,
     QHeaderView,
+    QPushButton,
+    QSizePolicy,
     QStyledItemDelegate,
     QTreeView,
     QVBoxLayout,
@@ -40,6 +42,7 @@ from ...renderer import (
     generate_group_thumbnail,
     generate_layer_thumbnail,
 )
+from ..theme_tokens import SPACING_NONE
 
 
 # ======================================================================
@@ -114,7 +117,6 @@ class _VisibilityDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         cb = QCheckBox(parent)
         cb.setAutoFillBackground(True)
-        cb.setStyleSheet("QCheckBox { margin: 0px; padding: 0px; }")
         cb.toggled.connect(lambda checked, idx=index: self._on_toggled(idx, checked))
         return cb
 
@@ -469,17 +471,17 @@ class LayerPanel(QWidget):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(
+            SPACING_NONE, SPACING_NONE, SPACING_NONE, SPACING_NONE
+        )
 
         # --- Button row: size presets + up/down buttons ---
-        from PySide6.QtWidgets import QPushButton
-
         button_row = QHBoxLayout()
         self._size_buttons: list[QPushButton] = []
         for px in self._SIZE_PRESETS:
             label = self._SIZE_LABELS.get(px, str(px))
             btn = QPushButton(label)
-            btn.setFixedWidth(30)
+            btn.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
             btn.setCheckable(True)
             if px == self._thumb_size:
                 btn.setChecked(True)
@@ -501,6 +503,7 @@ class LayerPanel(QWidget):
         self._model = LayerTreeModel()
         self._tree = QTreeView()
         self._tree.setModel(self._model)
+        self._tree.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._tree.setHeaderHidden(True)
         self._tree.setExpandsOnDoubleClick(True)
         self._tree.setDragDropMode(QTreeView.DragDropMode.InternalMove)
@@ -578,14 +581,14 @@ class LayerPanel(QWidget):
 
     def _apply_icon_size(self):
         """Set the tree view's icon size and row height from current thumb size."""
-
         px = self._thumb_size
         self._tree.setIconSize(QSize(px, px))
-        # Row height = icon + padding so content doesn't clip.
-        self._tree.setStyleSheet(
-            f"QTreeView::item {{ height: {px + 4}px; min-height: {px + 4}px; }}"
-        )
-        # Force layout update.
+        # Use a dynamic property so the central stylesheet can target the
+        # correct row height via QTreeView[thumbSize="s"|"m"|"l"]::item.
+        size_label = self._SIZE_LABELS.get(px, "m").lower()
+        self._tree.setProperty("thumbSize", size_label)
+        self._tree.style().unpolish(self._tree)
+        self._tree.style().polish(self._tree)
         self._tree.doItemsLayout()
 
     def _move_selected(self, direction: int):

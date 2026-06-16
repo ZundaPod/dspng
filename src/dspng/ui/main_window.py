@@ -19,6 +19,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QActionGroup, QIcon
 from PySide6.QtWidgets import (
+    QApplication,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -34,17 +35,9 @@ from ..psd_manager import DocumentStore
 from .panels.file_list import FileListPanel
 from .panels.layer_panel import LayerPanel
 from .panels.render_canvas import RenderCanvas
-from .settings import get_accent, get_mode, load, save
-from .styles import generate_stylesheet
-from .themes import (
-    ACCENT_LABELS,
-    MODE_LABELS,
-    Accent,
-    Theme,
-    ThemeMode,
-    make_dark,
-    make_light,
-)
+from .settings import get_mode, load, save
+from .theme_manager import MODE_LABELS, ThemeManager, ThemeMode
+from .theme_tokens import SPACING_NONE, SPACING_XS
 
 
 class MainWindow(QMainWindow):
@@ -60,8 +53,6 @@ class MainWindow(QMainWindow):
         # Load persisted settings and apply theme.
         self._settings = load()
         self._mode = get_mode(self._settings)
-        self._accent = get_accent(self._settings)
-        self._theme: Theme = make_dark(self._accent)
         self._apply_theme()
 
         # Central state
@@ -103,8 +94,6 @@ class MainWindow(QMainWindow):
                 icon = QIcon(str(icon_path))
                 if not icon.isNull():
                     self.setWindowIcon(icon)
-                    from PySide6.QtWidgets import QApplication
-
                     app = QApplication.instance()
                     if app is not None:
                         app.setWindowIcon(icon)
@@ -115,25 +104,12 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
 
     def _apply_theme(self):
-        """Resolve the current mode (handle SYSTEM) and apply the stylesheet."""
-        mode = self._mode
-        if mode == ThemeMode.SYSTEM:
-            # Detect system preference via palette.
-            # PySide6 doesn't expose a direct API, so use a heuristic:
-            # check if the window's default background is light or dark.
-            from PySide6.QtGui import QGuiApplication
-
-            palette = QGuiApplication.palette()
-            bg = palette.window().color()
-            is_dark = bg.lightnessF() < 0.5
-            mode = ThemeMode.DARK if is_dark else ThemeMode.LIGHT
-
-        self._theme = (
-            make_dark(self._accent)
-            if mode == ThemeMode.DARK
-            else make_light(self._accent)
-        )
-        self.setStyleSheet(generate_stylesheet(self._theme))
+        """Resolve the current mode and push the compiled stylesheet."""
+        theme = ThemeManager()
+        if self._mode == ThemeMode.SYSTEM:
+            theme.set_theme(ThemeManager.detect_system_mode())
+        else:
+            theme.set_theme(self._mode.value)
 
     # ------------------------------------------------------------------
     # Layout
@@ -145,8 +121,10 @@ class MainWindow(QMainWindow):
         container = QFrame()
         container.setFrameShape(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setContentsMargins(
+            SPACING_NONE, SPACING_NONE, SPACING_NONE, SPACING_NONE
+        )
+        layout.setSpacing(SPACING_NONE)
 
         label = QLabel(title.upper())
         label.setObjectName("panelTitle")
@@ -158,7 +136,7 @@ class MainWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         root_layout = QHBoxLayout(central)
-        root_layout.setContentsMargins(4, 4, 4, 4)
+        root_layout.setContentsMargins(SPACING_XS, SPACING_XS, SPACING_XS, SPACING_XS)
 
         h_splitter = QSplitter(Qt.Orientation.Horizontal)
         h_splitter.addWidget(self._make_panel("Render", self._canvas))
@@ -204,7 +182,6 @@ class MainWindow(QMainWindow):
     def _setup_view_menu(self):
         menu = self.menuBar().addMenu("&View")
 
-        # ---- Theme mode submenu ----
         mode_menu = menu.addMenu("Theme")
         mode_group = QActionGroup(self)
         mode_group.setExclusive(True)
@@ -217,34 +194,9 @@ class MainWindow(QMainWindow):
             mode_group.addAction(act)
             mode_menu.addAction(act)
 
-        menu.addSeparator()
-
-        # ---- Accent submenu ----
-        accent_menu = menu.addMenu("Accent")
-        accent_group = QActionGroup(self)
-        accent_group.setExclusive(True)
-
-        for accent in Accent:
-            act = QAction(ACCENT_LABELS[accent], self)
-            act.setCheckable(True)
-            act.setChecked(self._accent == accent)
-            act.triggered.connect(lambda checked, a=accent: self._set_accent(a))
-            accent_group.addAction(act)
-            accent_menu.addAction(act)
-
-    # ------------------------------------------------------------------
-    # Theme actions
-    # ------------------------------------------------------------------
-
     def _set_mode(self, mode: ThemeMode):
         self._mode = mode
         self._settings["theme_mode"] = mode.value
-        save(self._settings)
-        self._apply_theme()
-
-    def _set_accent(self, accent: Accent):
-        self._accent = accent
-        self._settings["accent"] = accent.value
         save(self._settings)
         self._apply_theme()
 

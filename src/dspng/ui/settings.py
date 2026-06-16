@@ -8,11 +8,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .themes import Accent, ThemeMode
+from .theme_manager import ThemeMode
 
 _DEFAULTS: dict[str, Any] = {
     "theme_mode": ThemeMode.DARK.value,
-    "accent": Accent.BLUE.value,
 }
 
 SETTINGS_DIR = Path.home() / ".dspng"
@@ -44,11 +43,3 @@ def get_mode(settings: dict[str, Any]) -> ThemeMode:
         return ThemeMode(raw)
     except ValueError:
         return ThemeMode.DARK
-
-
-def get_accent(settings: dict[str, Any]) -> Accent:
-    raw = settings.get("accent", _DEFAULTS["accent"])
-    try:
-        return Accent(raw)
-    except ValueError:
-        return Accent.BLUE
