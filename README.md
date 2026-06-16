@@ -1,73 +1,70 @@
 # dspng
 
-A standalone tool for rendering PSD files to PNG without launching Photoshop.
+A standalone tool for rendering PSD files to PNG without Photoshop.
 
 ## Features
 
 - **PSD Import**: Open PSD files via file dialog or drag-and-drop
-- **Layer Management**: Toggle visibility, reorder layers/groups with drag or buttons
-- **Real-time Rendering**: Composite preview with zoom, pan, and fit-to-view
-- **PNG Export**: Save dialog, drag-export to Premiere/file manager, batch export
-- **Thumbnails**: Square thumbnails in file list and layer panel with S/M/L size presets
-- **Dark Theme**: Lettepa color palette with Light/Dark/System toggle and 6 accent colors
-- **Keyboard Shortcuts**: Ctrl+O/E/Q, scroll zoom, middle-click pan, double-click fit
+- **Layer Management**: Toggle visibility (eye/eye-closed icons), reorder layers/groups, expand/collapse all groups, tri-state bulk visibility
+- **Real-time Rendering**: Composite preview with zoom, pan (middle-click, right-click, Alt+left-click), and fit-to-view
+- **PNG Export**: Save dialog, drag-export with custom naming (`{name}_{counter:03d}.png`), per-file counter, configurable temp directory
+- **Theme Customisation**: Dark/Light/System theme modes, 14 customisable colour tokens, font family/size/weight, live preview
+- **i18n**: English + 简体中文, runtime language switching
+- **Settings Dialog** (Ctrl+,): Appearance, Files, Keymaps tabs
 
 ## Quick Start
 
 ```bash
-# Install dependencies
 uv sync
-
-# Run
 uv run dspng
-
-# Open a specific file
 uv run dspng path/to/file.psd
 ```
 
-## Build Standalone EXE
+## Build
 
 ```bash
 uv run scripts/build.py
-# Output: dist/dspng.exe (~63MB, no Python required)
+# Output: dist/dspng.exe
 ```
 
 ## Architecture
 
 ```
 src/dspng/
-├── models.py           # LayerNode, LayerGroup, PsdDocument
+├── models.py           # PsdDocument, LayerNode, LayerGroup
 ├── psd_manager.py      # PSD loading via psd-tools
 ├── renderer.py         # Compositing, thumbnails, PNG export
 └── ui/
-    ├── main_window.py  # Three-panel layout + menus
-    ├── themes.py       # Lettepa palette + theme definitions
-    ├── styles.py       # Dynamic QSS stylesheet
-    ├── settings.py     # ~/.dspng/settings.json persistence
+    ├── main_window.py       # Three-panel layout + menus
+    ├── icon_manager.py      # SVG icon loading + colourisation
+    ├── locale_manager.py    # gettext-based i18n
+    ├── theme_manager.py     # Central stylesheet + font/colour customisation
+    ├── theme_tokens.py      # M3 design tokens (spacing, colours, fonts)
+    ├── settings.py          # ~/.dspng/settings.json persistence
+    ├── settings_dialog.py   # Multi-tab settings (Appearance, Files, Keymaps)
     └── panels/
-        ├── file_list.py      # File list with S/M/L presets
-        ├── layer_panel.py    # Layer tree with visibility/reorder
+        ├── file_list.py      # File list with inline name/counter edit
+        ├── layer_panel.py    # Layer tree with eye icons, expand/collapse
         └── render_canvas.py  # Zoom/pan/drag-export canvas
+
+icons/                  # Tabler SVG icons
+locales/                # .po/.mo translation files
+scripts/                # Build + locale compilation
 ```
 
-## Keyboard Shortcuts
+## Keyboard & Mouse
 
-| Shortcut | Action |
+| Input | Action |
 |---|---|
 | Ctrl+O | Open PSD file |
 | Ctrl+E | Export PNG |
+| Ctrl+, | Settings |
 | Ctrl+Q | Quit |
-| F1 | Keyboard shortcuts help |
 | Scroll wheel | Zoom in/out |
-| Middle-click drag | Pan |
-| Alt+Left-click drag | Pan |
+| Middle-click / Right-click / Alt+Left drag | Pan |
 | Double-click | Fit to view |
-| Left-click drag | Drag export PNG |
+| Left-click drag | Drag-export PNG |
 
 ## License
 
 GPL-2.0 — see [LICENSE](LICENSE).
-
-## Author
-
-[johanvx](https://github.com/johanvx)
