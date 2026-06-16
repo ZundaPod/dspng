@@ -52,14 +52,20 @@ jobs:
       - name: Generate changelog
         run: git-cliff -t ${{ needs.check-version.outputs.version }} -o CHANGELOG.md
 
-      - name: Commit changelog
+      - name: Sync version to pyproject.toml
+        run: sed -i "s/^version = \"[^\"]*\"/version = \"${{ needs.check-version.outputs.version }}\"/" pyproject.toml
+
+      - name: Sync version to main.py
+        run: sed -i "s/setApplicationVersion(\"[^\"]*\")/setApplicationVersion(\"${{ needs.check-version.outputs.version }}\")/" src/dspng/main.py
+
+      - name: Commit changelog and version sync
         id: add-changelog
         uses: EndBug/add-and-commit@v10
         with:
-          add: CHANGELOG.md
+          add: "CHANGELOG.md pyproject.toml src/dspng/main.py"
           author_name: github-actions[bot]
           author_email: 41898282+github-actions[bot]@users.noreply.github.com
-          message: "release: update changelog for ${{ needs.check-version.outputs.version }}"
+          message: "release: bump to ${{ needs.check-version.outputs.version }}"
 
       - name: Create tag
         uses: mathieudutour/github-tag-action@v6.2
