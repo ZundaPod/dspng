@@ -8,13 +8,19 @@ re-renders all cached icons when the theme changes.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
-_ICONS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "icons"
+# Icons directory: when frozen by PyInstaller, icons are extracted to
+# sys._MEIPASS; in development they live under the project root.
+if getattr(sys, "frozen", False):
+    _ICONS_DIR = Path(sys._MEIPASS) / "icons"
+else:
+    _ICONS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "icons"
 
 _DEFAULT_COLOR = "#FFFFFF"
 _DEFAULT_SIZE = 20
