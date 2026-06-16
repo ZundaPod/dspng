@@ -471,6 +471,32 @@ class LayerPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
+        # --- Button row: size presets + up/down buttons ---
+        from PySide6.QtWidgets import QPushButton
+
+        button_row = QHBoxLayout()
+        self._size_buttons: list[QPushButton] = []
+        for px in self._SIZE_PRESETS:
+            label = self._SIZE_LABELS.get(px, str(px))
+            btn = QPushButton(label)
+            btn.setFixedWidth(30)
+            btn.setCheckable(True)
+            if px == self._thumb_size:
+                btn.setChecked(True)
+            btn.clicked.connect(lambda checked, s=px: self._set_size(s))
+            button_row.addWidget(btn)
+            self._size_buttons.append(btn)
+
+        button_row.addStretch()
+
+        self._btn_up = QPushButton("↑ Up")
+        self._btn_down = QPushButton("↓ Down")
+        self._btn_up.clicked.connect(lambda: self._move_selected(1))
+        self._btn_down.clicked.connect(lambda: self._move_selected(-1))
+        button_row.addWidget(self._btn_up)
+        button_row.addWidget(self._btn_down)
+        layout.addLayout(button_row)
+
         # --- Tree view ---
         self._model = LayerTreeModel()
         self._tree = QTreeView()
@@ -501,32 +527,6 @@ class LayerPanel(QWidget):
         self._model.layoutChanged.connect(self._on_layout_changed)
 
         layout.addWidget(self._tree, stretch=1)
-
-        # --- Bottom row: size presets + up/down buttons ---
-        from PySide6.QtWidgets import QPushButton
-
-        bottom_row = QHBoxLayout()
-        self._size_buttons: list[QPushButton] = []
-        for px in self._SIZE_PRESETS:
-            label = self._SIZE_LABELS.get(px, str(px))
-            btn = QPushButton(label)
-            btn.setFixedWidth(30)
-            btn.setCheckable(True)
-            if px == self._thumb_size:
-                btn.setChecked(True)
-            btn.clicked.connect(lambda checked, s=px: self._set_size(s))
-            bottom_row.addWidget(btn)
-            self._size_buttons.append(btn)
-
-        bottom_row.addStretch()
-
-        self._btn_up = QPushButton("↑ Up")
-        self._btn_down = QPushButton("↓ Down")
-        self._btn_up.clicked.connect(lambda: self._move_selected(1))
-        self._btn_down.clicked.connect(lambda: self._move_selected(-1))
-        bottom_row.addWidget(self._btn_up)
-        bottom_row.addWidget(self._btn_down)
-        layout.addLayout(bottom_row)
 
         # Apply initial icon size.
         self._apply_icon_size()

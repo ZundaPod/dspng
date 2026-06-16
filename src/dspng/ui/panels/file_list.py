@@ -98,18 +98,8 @@ class FileListPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # --- List view ---
-        self._model = FileListModel(self._store, self._current_size)
-        self._list_view = QListView()
-        self._list_view.setModel(self._model)
-        self._list_view.setIconSize(QSize(self._current_size, self._current_size))
-        self._list_view.setDragDropMode(QListView.DragDropMode.NoDragDrop)
-        self._list_view.setSelectionMode(QListView.SelectionMode.SingleSelection)
-        self._list_view.clicked.connect(self._on_clicked)
-        layout.addWidget(self._list_view)
-
-        # --- Bottom row: size presets + add/remove buttons ---
-        bottom_row = QHBoxLayout()
+        # --- Button row: size presets + add/remove buttons ---
+        button_row = QHBoxLayout()
         self._size_buttons: list[QPushButton] = []
 
         # Size preset buttons (S / M / L).
@@ -121,10 +111,10 @@ class FileListPanel(QWidget):
             if px == self._current_size:
                 btn.setChecked(True)
             btn.clicked.connect(lambda checked, s=px: self._set_size(s))
-            bottom_row.addWidget(btn)
+            button_row.addWidget(btn)
             self._size_buttons.append(btn)
 
-        bottom_row.addStretch()
+        button_row.addStretch()
 
         self._btn_add = QPushButton("+ Add")
         self._btn_remove = QPushButton("− Remove")
@@ -132,11 +122,21 @@ class FileListPanel(QWidget):
         self._btn_add.clicked.connect(self._on_add)
         self._btn_remove.clicked.connect(self._on_remove)
         self._btn_reload.clicked.connect(self._on_reload)
-        bottom_row.addWidget(self._btn_reload)
-        bottom_row.addWidget(self._btn_add)
-        bottom_row.addWidget(self._btn_remove)
+        button_row.addWidget(self._btn_reload)
+        button_row.addWidget(self._btn_add)
+        button_row.addWidget(self._btn_remove)
 
-        layout.addLayout(bottom_row)
+        layout.addLayout(button_row)
+
+        # --- List view ---
+        self._model = FileListModel(self._store, self._current_size)
+        self._list_view = QListView()
+        self._list_view.setModel(self._model)
+        self._list_view.setIconSize(QSize(self._current_size, self._current_size))
+        self._list_view.setDragDropMode(QListView.DragDropMode.NoDragDrop)
+        self._list_view.setSelectionMode(QListView.SelectionMode.SingleSelection)
+        self._list_view.clicked.connect(self._on_clicked)
+        layout.addWidget(self._list_view, stretch=1)
 
         # --- Accept drops ---
         self.setAcceptDrops(True)
