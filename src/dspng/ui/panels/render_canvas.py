@@ -3,7 +3,7 @@ Render canvas — left area.
 
 Displays the composited PSD image with:
   - Scroll-wheel zoom (centered on cursor).
-  - Middle-button / Alt+left-button pan.
+  - Middle-button / right-button / Alt+left-button pan.
   - Left-button drag to export PNG to Premiere or the file system.
 """
 
@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import QByteArray, QMimeData, QPointF, QRectF, Qt
+from PySide6.QtCore import QByteArray, QMimeData, QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -38,6 +38,8 @@ from ...renderer import composite
 class RenderCanvas(QGraphicsView):
     """Zoomable / pannable canvas that shows the composited PSD image."""
 
+    export_occurred = Signal()
+
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
 
@@ -58,6 +60,7 @@ class RenderCanvas(QGraphicsView):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
 
         # Checkerboard background to indicate transparency.
         checker_brush = QBrush(QPixmap.fromImage(_checkerboard_image(16)))
@@ -128,9 +131,13 @@ class RenderCanvas(QGraphicsView):
     # ------------------------------------------------------------------
 
     def mousePressEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MouseButton.MiddleButton or (
-            event.button() == Qt.MouseButton.LeftButton
-            and event.modifiers() & Qt.KeyboardModifier.AltModifier
+        if (
+            event.button() == Qt.MouseButton.MiddleButton
+            or (
+                event.button() == Qt.MouseButton.LeftButton
+                and event.modifiers() & Qt.KeyboardModifier.AltModifier
+            )
+            or event.button() == Qt.MouseButton.RightButton
         ):
             self._panning = True
             self._pan_start = event.position()
@@ -197,34 +204,51 @@ class RenderCanvas(QGraphicsView):
         import tempfile
 
         from ...renderer import composite_to_bytes
+        from ...ui.settings import get_temp_dir, load
 
         png_bytes = composite_to_bytes(self._doc)
 
-        # Write to a temp file so Premiere / Explorer can receive a real path.
-        tmp = tempfile.NamedTemporaryFile(suffix=".png", prefix="dspng_", delete=False)
+        temp_dir = Path(get_temp_dir(load()))
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build the export filename: {display_name}_{counter:03d}.png
+        name = self._doc.display_name or self._doc.name
+        counter = self._doc.export_counter
+        filename = f"{name}_{counter:03d}.png"
+        dest_path = temp_dir / filename
+
+        # Write to a temp file first, then rename to the proper name.
+        tmp = tempfile.NamedTemporaryFile(
+            suffix=".png", prefix="dspng_", dir=str(temp_dir), delete=False
+        )
         tmp.write(png_bytes)
         tmp.flush()
         tmp.close()
         tmp_path = Path(tmp.name)
+        # Overwrite if the destination already exists (user rewound counter).
+        dest_path.unlink(missing_ok=True)
+        tmp_path.rename(dest_path)
 
         drag = QDrag(self)
         mime = QMimeData()
         mime.setData("image/png", QByteArray(png_bytes))
-        mime.setUrls([tmp_path.as_uri()])
+        mime.setUrls([dest_path.as_uri()])
 
         drag.setMimeData(mime)
 
-        # Use the thumbnail as the drag pixmap.
         thumb = self._doc.thumbnail
         if thumb is not None:
             qimg = _pil_to_qimage(thumb)
             drag.setPixmap(QPixmap.fromImage(qimg))
 
-        # exec() blocks until the drop completes; clean up afterwards.
-        drag.exec(Qt.DropAction.CopyAction)
-        # Note: the temp file persists after the drag.  A production
-
-        # implementation should schedule cleanup or use a cache directory.
+        result = drag.exec(Qt.DropAction.CopyAction)
+        if result == Qt.DropAction.CopyAction:
+            # Drag succeeded — advance the counter.
+            self._doc.export_counter += 1
+            self.export_occurred.emit()
+        else:
+            # Drag cancelled — clean up the temp file.
+            dest_path.unlink(missing_ok=True)
 
 
 # ======================================================================

@@ -1,0 +1,336 @@
+# English translations for dspng.
+# This file is the template (POT).  English strings are the msgids;
+# translations are identical, so this file exists only for completeness.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: dspng\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# ---- Main window ----
+msgid "dspng — PSD → PNG"
+msgstr "dspng — PSD → PNG"
+
+msgid "Render"
+msgstr "Render"
+
+msgid "Files"
+msgstr "Files"
+
+msgid "Layers"
+msgstr "Layers"
+
+# ---- Menus ----
+msgid "&File"
+msgstr "&File"
+
+msgid "&Open…"
+msgstr "&Open…"
+
+msgid "&Export PNG…"
+msgstr "&Export PNG…"
+
+msgid "&Quit"
+msgstr "&Quit"
+
+msgid "Dark"
+msgstr "Dark"
+
+msgid "System"
+msgstr "System"
+
+msgid "&Help"
+msgstr "&Help"
+
+msgid "&About"
+msgstr "&About"
+
+# ---- Dialogs ----
+
+msgid "About dspng"
+msgstr "About dspng"
+
+# ---- File dialogs ----
+msgid "Open PSD Files"
+msgstr "Open PSD Files"
+
+msgid "Photoshop Files (*.psd)"
+msgstr "Photoshop Files (*.psd)"
+
+msgid "Export PNG"
+msgstr "Export PNG"
+
+msgid "PNG Image (*.png)"
+msgstr "PNG Image (*.png)"
+
+# ---- File list panel ----
+msgid "+ Add"
+msgstr "+ Add"
+
+msgid "− Remove"
+msgstr "− Remove"
+
+msgid "Reload"
+msgstr "Reload"
+
+msgid "Load Error"
+msgstr "Load Error"
+
+msgid "Reload Error"
+msgstr "Reload Error"
+
+# ---- Layer panel ----
+msgid "↑ Up"
+msgstr "↑ Up"
+
+msgid "↓ Down"
+msgstr "↓ Down"
+
+msgid "&Settings…"
+msgstr "&Settings…"
+
+msgid "Appearance"
+msgstr "Appearance"
+
+msgid "Background"
+msgstr "Background"
+
+msgid "Border"
+msgstr "Border"
+
+msgid "Borders"
+msgstr "Borders"
+
+msgid "Choose colour"
+msgstr "Choose colour"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Language"
+msgstr "Language"
+
+msgid "On Primary"
+msgstr "On Primary"
+
+msgid "Outline"
+msgstr "Outline"
+
+msgid "Primary"
+msgstr "Primary"
+
+msgid "Primary Container"
+msgstr "Primary Container"
+
+msgid "Reset to defaults"
+msgstr "Reset to defaults"
+
+msgid "Secondary"
+msgstr "Secondary"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Surface"
+msgstr "Surface"
+
+msgid "Surface Variant"
+msgstr "Surface Variant"
+
+msgid "Text On Primary"
+msgstr "Text On Primary"
+
+msgid "Text Primary"
+msgstr "Text Primary"
+
+msgid "Text Secondary"
+msgstr "Text Secondary"
+
+msgid "Theme Mode"
+msgstr "Theme Mode"
+
+msgid "Reset to default"
+msgstr "Reset to default"
+
+msgid "<p>A standalone tool for rendering PSD files to PNG<br>without launching Photoshop.</p><p><b>Author:</b> johanvx (<a href='https://github.com/johanvx'>github.com/johanvx</a>)</p><p><b>Source:</b> <a href='https://github.com/ZundaPod/dspng'>github.com/ZundaPod/dspng</a></p><p><b>License:</b> GPL-2.0 (<a href='https://spdx.org/licenses/GPL-2.0-only.html'>spdx.org</a>)</p>"
+msgstr "<p>A standalone tool for rendering PSD files to PNG<br>without launching Photoshop.</p><p><b>Author:</b> johanvx (<a href='https://github.com/johanvx'>github.com/johanvx</a>)</p><p><b>Source:</b> <a href='https://github.com/ZundaPod/dspng'>github.com/ZundaPod/dspng</a></p><p><b>License:</b> GPL-2.0 (<a href='https://spdx.org/licenses/GPL-2.0-only.html'>spdx.org</a>)</p>"
+
+msgid "Font"
+msgstr "Font"
+
+msgid "Family"
+msgstr "Family"
+
+msgid "Size"
+msgstr "Size"
+
+msgid "Weight"
+msgstr "Weight"
+
+msgid "Light"
+msgstr "Light"
+
+msgid "General"
+msgstr "General"
+
+msgid "Add file"
+msgstr "Add file"
+
+msgid "Remove file"
+msgstr "Remove file"
+
+msgid "Reload file"
+msgstr "Reload file"
+
+msgid "Move up"
+msgstr "Move up"
+
+msgid "Move down"
+msgstr "Move down"
+
+msgid "+ button / Drag and drop .psd"
+msgstr "+ button / Drag and drop .psd"
+
+msgid "Add file"
+msgstr "Add file"
+
+msgid "Canvas"
+msgstr "Canvas"
+
+msgid "Click checkbox"
+msgstr "Click checkbox"
+
+msgid "Double-click"
+msgstr "Double-click"
+
+msgid "Drag and drop"
+msgstr "Drag and drop"
+
+msgid "Export PNG"
+msgstr "Export PNG"
+
+msgid "Export PNG (drag)"
+msgstr "Export PNG (drag)"
+
+msgid "File"
+msgstr "File"
+
+msgid "File List"
+msgstr "File List"
+
+msgid "Fit to view"
+msgstr "Fit to view"
+
+msgid "Keymaps"
+msgstr "Keymaps"
+
+msgid "Layer Panel"
+msgstr "Layer Panel"
+
+msgid "Left-click drag"
+msgstr "Left-click drag"
+
+msgid "Middle-click / Right-click / Alt+Left-click drag"
+msgstr "Middle-click / Right-click / Alt+Left-click drag"
+
+msgid "Move up / down"
+msgstr "Move up / down"
+
+msgid "Open PSD"
+msgstr "Open PSD"
+
+msgid "Pan"
+msgstr "Pan"
+
+msgid "Quit"
+msgstr "Quit"
+
+msgid "Reload file"
+msgstr "Reload file"
+
+msgid "Remove file"
+msgstr "Remove file"
+
+msgid "Reorder"
+msgstr "Reorder"
+
+msgid "Scroll wheel"
+msgstr "Scroll wheel"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Toggle visibility"
+msgstr "Toggle visibility"
+
+msgid "Zoom in / out"
+msgstr "Zoom in / out"
+
+msgid "↑ / ↓ buttons"
+msgstr "↑ / ↓ buttons"
+
+msgid "↻ button"
+msgstr "↻ button"
+
+msgid "− button"
+msgstr "− button"
+
+msgid "Files"
+msgstr "Files"
+
+msgid "Temp files"
+msgstr "Temp files"
+
+msgid "Drag-export temp dir"
+msgstr "Drag-export temp dir"
+
+msgid "Browse…"
+msgstr "Browse…"
+
+msgid "Choose temp directory"
+msgstr "Choose temp directory"
+
+msgid "Rename"
+msgstr "Rename"
+
+msgid "Export name:"
+msgstr "Export name:"
+
+msgid "Undo last export"
+msgstr "Undo last export"
+
+msgid "Export counter"
+msgstr "Export counter"
+
+msgid "Expand all groups"
+msgstr "Expand all groups"
+
+msgid "Collapse all groups"
+msgstr "Collapse all groups"
+
+msgid "Toggle all visibility"
+msgstr "Toggle all visibility"
+
+msgid "Save visibility and expand state to PSD"
+msgstr "Save visibility and expand state to PSD"
+
+msgid "Save to PSD"
+msgstr "Save to PSD"
+
+msgid "This will modify the original PSD file. Continue?"
+msgstr "This will modify the original PSD file. Continue?"
+
+msgid "Saved successfully."
+msgstr "Saved successfully."
+
+msgid "Failed to save: "
+msgstr "Failed to save: "
+
+msgid "This feature is not yet available."
+msgstr "This feature is not yet available."

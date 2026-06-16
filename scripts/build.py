@@ -35,9 +35,10 @@ def ensure_deps():
     try:
         subprocess.run(
             ["uv", "run", "pyinstaller", "--version"],
-            capture_output=True, check=True,
+            capture_output=True,
+            check=True,
         )
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         print("> Installing pyinstaller ...")
         run(["uv", "add", "--dev", "pyinstaller"])
 
@@ -53,14 +54,21 @@ def build_qt() -> int:
     suffix = ".exe" if sys.platform == "win32" else ""
 
     cmd = [
-        "uv", "run", "pyinstaller",
+        "uv",
+        "run",
+        "pyinstaller",
         "--onefile",
         "--windowed",
-        "--name", "dspng",
-        "--distpath", str(DIST_DIR),
-        "--workpath", str(BUILD_DIR),
+        "--name",
+        "dspng",
+        "--distpath",
+        str(DIST_DIR),
+        "--workpath",
+        str(BUILD_DIR),
         "--clean",
         f"--add-data={icon}{sep}.",
+        f"--add-data={PROJECT_ROOT / 'locales'}{sep}locales",
+        f"--add-data={PROJECT_ROOT / 'icons'}{sep}icons",
         str(SRC_DSPNG / "main.py"),
     ]
     if icon.exists():

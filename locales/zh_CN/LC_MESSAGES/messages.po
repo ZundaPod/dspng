@@ -1,0 +1,334 @@
+# Simplified Chinese translations for dspng.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: dspng\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# ---- Main window ----
+msgid "dspng — PSD → PNG"
+msgstr "dspng — PSD → PNG"
+
+msgid "Render"
+msgstr "渲染"
+
+msgid "Files"
+msgstr "文件"
+
+msgid "Layers"
+msgstr "图层"
+
+# ---- Menus ----
+msgid "&File"
+msgstr "文件(&F)"
+
+msgid "&Open…"
+msgstr "打开(&O)…"
+
+msgid "&Export PNG…"
+msgstr "导出 PNG(&E)…"
+
+msgid "&Quit"
+msgstr "退出(&Q)"
+
+msgid "Dark"
+msgstr "深色"
+
+msgid "System"
+msgstr "跟随系统"
+
+msgid "&Help"
+msgstr "帮助(&H)"
+
+msgid "&About"
+msgstr "关于(&A)"
+
+# ---- Dialogs ----
+
+msgid "About dspng"
+msgstr "关于 dspng"
+
+# ---- File dialogs ----
+msgid "Open PSD Files"
+msgstr "打开 PSD 文件"
+
+msgid "Photoshop Files (*.psd)"
+msgstr "Photoshop 文件 (*.psd)"
+
+msgid "Export PNG"
+msgstr "导出 PNG"
+
+msgid "PNG Image (*.png)"
+msgstr "PNG 图像 (*.png)"
+
+# ---- File list panel ----
+msgid "+ Add"
+msgstr "+ 添加"
+
+msgid "− Remove"
+msgstr "− 移除"
+
+msgid "Reload"
+msgstr "重新加载"
+
+msgid "Load Error"
+msgstr "加载错误"
+
+msgid "Reload Error"
+msgstr "重新加载错误"
+
+# ---- Layer panel ----
+msgid "↑ Up"
+msgstr "↑ 上移"
+
+msgid "↓ Down"
+msgstr "↓ 下移"
+
+msgid "&Settings…"
+msgstr "设置(&S)…"
+
+msgid "Appearance"
+msgstr "外观"
+
+msgid "Background"
+msgstr "背景色"
+
+msgid "Border"
+msgstr "边框"
+
+msgid "Borders"
+msgstr "边框"
+
+msgid "Choose colour"
+msgstr "选择颜色"
+
+msgid "Error"
+msgstr "错误"
+
+msgid "Language"
+msgstr "语言"
+
+msgid "On Primary"
+msgstr "主色上文字"
+
+msgid "Outline"
+msgstr "轮廓线"
+
+msgid "Primary"
+msgstr "主色"
+
+msgid "Primary Container"
+msgstr "主色容器"
+
+msgid "Reset to defaults"
+msgstr "恢复默认"
+
+msgid "Secondary"
+msgstr "辅色"
+
+msgid "Settings"
+msgstr "设置"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "Surface"
+msgstr "表面"
+
+msgid "Surface Variant"
+msgstr "表面变体"
+
+msgid "Text On Primary"
+msgstr "主色上文字"
+
+msgid "Text Primary"
+msgstr "主文字"
+
+msgid "Text Secondary"
+msgstr "次文字"
+
+msgid "Theme Mode"
+msgstr "主题模式"
+
+msgid "Reset to default"
+msgstr "恢复默认"
+
+msgid "<p>A standalone tool for rendering PSD files to PNG<br>without launching Photoshop.</p><p><b>Author:</b> johanvx (<a href='https://github.com/johanvx'>github.com/johanvx</a>)</p><p><b>Source:</b> <a href='https://github.com/ZundaPod/dspng'>github.com/ZundaPod/dspng</a></p><p><b>License:</b> GPL-2.0 (<a href='https://spdx.org/licenses/GPL-2.0-only.html'>spdx.org</a>)</p>"
+msgstr "<p>一个无需 Photoshop 即可将 PSD 文件渲染为 PNG 的独立工具。</p><p><b>作者：</b> johanvx (<a href='https://github.com/johanvx'>github.com/johanvx</a>)</p><p><b>源代码：</b> <a href='https://github.com/ZundaPod/dspng'>github.com/ZundaPod/dspng</a></p><p><b>许可证：</b> GPL-2.0 (<a href='https://spdx.org/licenses/GPL-2.0-only.html'>spdx.org</a>)</p>"
+
+msgid "Font"
+msgstr "字体"
+
+msgid "Family"
+msgstr "字体"
+
+msgid "Size"
+msgstr "字号"
+
+msgid "Weight"
+msgstr "字重"
+
+msgid "Light"
+msgstr "浅色"
+
+msgid "General"
+msgstr "通用"
+
+msgid "Add file"
+msgstr "添加文件"
+
+msgid "Remove file"
+msgstr "移除文件"
+
+msgid "Reload file"
+msgstr "重新加载文件"
+
+msgid "Move up"
+msgstr "上移"
+
+msgid "Move down"
+msgstr "下移"
+
+msgid "+ button / Drag and drop .psd"
+msgstr "+ 按钮 / 拖放 .psd"
+
+msgid "Add file"
+msgstr "添加文件"
+
+msgid "Canvas"
+msgstr "画布"
+
+msgid "Click checkbox"
+msgstr "点击复选框"
+
+msgid "Double-click"
+msgstr "双击"
+
+msgid "Drag and drop"
+msgstr "拖放"
+
+msgid "Export PNG"
+msgstr "导出 PNG"
+
+msgid "Export PNG (drag)"
+msgstr "导出 PNG (拖拽)"
+
+msgid "File"
+msgstr "文件"
+
+msgid "File List"
+msgstr "文件列表"
+
+msgid "Fit to view"
+msgstr "适应窗口"
+
+msgid "Keymaps"
+msgstr "快捷键"
+
+msgid "Layer Panel"
+msgstr "图层面板"
+
+msgid "Left-click drag"
+msgstr "左键拖拽"
+
+msgid "Middle-click / Right-click / Alt+Left-click drag"
+msgstr "中键 / 右键 / Alt+左键 拖拽"
+
+msgid "Move up / down"
+msgstr "上移 / 下移"
+
+msgid "Open PSD"
+msgstr "打开 PSD"
+
+msgid "Pan"
+msgstr "平移"
+
+msgid "Quit"
+msgstr "退出"
+
+msgid "Reload file"
+msgstr "重新加载文件"
+
+msgid "Remove file"
+msgstr "移除文件"
+
+msgid "Reorder"
+msgstr "重新排序"
+
+msgid "Scroll wheel"
+msgstr "滚轮"
+
+msgid "Settings"
+msgstr "设置"
+
+msgid "Toggle visibility"
+msgstr "切换可见性"
+
+msgid "Zoom in / out"
+msgstr "放大 / 缩小"
+
+msgid "↑ / ↓ buttons"
+msgstr "↑ / ↓ 按钮"
+
+msgid "↻ button"
+msgstr "↻ 按钮"
+
+msgid "− button"
+msgstr "− 按钮"
+
+msgid "Files"
+msgstr "文件"
+
+msgid "Temp files"
+msgstr "临时文件"
+
+msgid "Drag-export temp dir"
+msgstr "拖拽导出临时目录"
+
+msgid "Browse…"
+msgstr "浏览…"
+
+msgid "Choose temp directory"
+msgstr "选择临时目录"
+
+msgid "Rename"
+msgstr "重命名"
+
+msgid "Export name:"
+msgstr "导出名称："
+
+msgid "Undo last export"
+msgstr "撤销上次导出"
+
+msgid "Export counter"
+msgstr "导出计数"
+
+msgid "Expand all groups"
+msgstr "展开全部组"
+
+msgid "Collapse all groups"
+msgstr "折叠全部组"
+
+msgid "Toggle all visibility"
+msgstr "切换全部可见性"
+
+msgid "Save visibility and expand state to PSD"
+msgstr "保存可见性和展开状态到 PSD"
+
+msgid "Save to PSD"
+msgstr "保存到 PSD"
+
+msgid "This will modify the original PSD file. Continue?"
+msgstr "这将修改原始 PSD 文件。继续吗？"
+
+msgid "Saved successfully."
+msgstr "保存成功。"
+
+msgid "Failed to save: "
+msgstr "保存失败："
+
+msgid "This feature is not yet available."
+msgstr "此功能暂未开放。"

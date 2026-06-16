@@ -78,3 +78,5 @@ elif sys.platform == "darwin":
     FONT_FAMILY = _FONT_MAC
 else:
     FONT_FAMILY = _FONT_LINUX
+
+DEFAULT_FONT_SIZE = "9pt"

@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QActionGroup, QIcon
+from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -32,11 +32,13 @@ from PySide6.QtWidgets import (
 )
 
 from ..psd_manager import DocumentStore
+from .locale_manager import tr
 from .panels.file_list import FileListPanel
 from .panels.layer_panel import LayerPanel
 from .panels.render_canvas import RenderCanvas
-from .settings import get_mode, load, save
-from .theme_manager import MODE_LABELS, ThemeManager, ThemeMode
+from .settings import get_mode, load
+from .settings_dialog import SettingsDialog
+from .theme_manager import ThemeManager, ThemeMode
 from .theme_tokens import SPACING_NONE, SPACING_XS
 
 
@@ -46,13 +48,19 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("dspng — PSD → PNG")
+        # Load settings and restore language BEFORE any tr() call.
+        self._settings = load()
+        self._mode = get_mode(self._settings)
+
+        from .locale_manager import LocaleManager
+        from .settings import get_language
+
+        LocaleManager().set_language(get_language(self._settings))
+
+        self.setWindowTitle(tr("dspng — PSD → PNG"))
         self.resize(1200, 800)
         self._set_window_icon()
 
-        # Load persisted settings and apply theme.
-        self._settings = load()
-        self._mode = get_mode(self._settings)
         self._apply_theme()
 
         # Central state
@@ -70,10 +78,11 @@ class MainWindow(QMainWindow):
         self._file_list.document_selected.connect(self._on_document_selected)
         self._layer_panel.layer_visibility_changed.connect(self._on_visibility_changed)
         self._layer_panel.thumbnail_changed.connect(self._on_thumbnail_changed)
+        self._canvas.export_occurred.connect(self._on_export_occurred)
+        LocaleManager().language_changed.connect(self._retranslate_ui)
 
         # Menu bar
         self._setup_file_menu()
-        self._setup_view_menu()
         self._setup_help_menu()
 
     # ------------------------------------------------------------------
@@ -105,7 +114,15 @@ class MainWindow(QMainWindow):
 
     def _apply_theme(self):
         """Resolve the current mode and push the compiled stylesheet."""
+        self._mode = get_mode(self._settings)
         theme = ThemeManager()
+        from .settings import get_custom_colors, get_custom_fonts
+
+        theme.set_custom_colors(get_custom_colors(self._settings))
+        fonts = get_custom_fonts(self._settings)
+        theme.set_custom_fonts(
+            fonts.get("family"), fonts.get("size"), fonts.get("weight")
+        )
         if self._mode == ThemeMode.SYSTEM:
             theme.set_theme(ThemeManager.detect_system_mode())
         else:
@@ -116,8 +133,12 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _make_panel(title: str, widget: QWidget) -> QWidget:
-        """Wrap *widget* in a container with a title label and border."""
+    def _make_panel(title: str, widget: QWidget) -> tuple[QWidget, QLabel]:
+        """Wrap *widget* in a container with a title label and border.
+
+        Returns (container, title_label) so callers can re-translate the
+        title at runtime.
+        """
         container = QFrame()
         container.setFrameShape(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(container)
@@ -126,11 +147,11 @@ class MainWindow(QMainWindow):
         )
         layout.setSpacing(SPACING_NONE)
 
-        label = QLabel(title.upper())
+        label = QLabel(title)
         label.setObjectName("panelTitle")
         layout.addWidget(label)
         layout.addWidget(widget, stretch=1)
-        return container
+        return container, label
 
     def _setup_layout(self):
         central = QWidget()
@@ -139,12 +160,17 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(SPACING_XS, SPACING_XS, SPACING_XS, SPACING_XS)
 
         h_splitter = QSplitter(Qt.Orientation.Horizontal)
-        h_splitter.addWidget(self._make_panel("Render", self._canvas))
+        render_panel, self._title_render = self._make_panel(tr("Render"), self._canvas)
+        h_splitter.addWidget(render_panel)
         h_splitter.setStretchFactor(0, 3)
 
         v_splitter = QSplitter(Qt.Orientation.Vertical)
-        v_splitter.addWidget(self._make_panel("Files", self._file_list))
-        v_splitter.addWidget(self._make_panel("Layers", self._layer_panel))
+        files_panel, self._title_files = self._make_panel(tr("Files"), self._file_list)
+        layers_panel, self._title_layers = self._make_panel(
+            tr("Layers"), self._layer_panel
+        )
+        v_splitter.addWidget(files_panel)
+        v_splitter.addWidget(layers_panel)
         v_splitter.setStretchFactor(0, 1)
         v_splitter.setStretchFactor(1, 2)
 
@@ -160,102 +186,83 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
 
     def _setup_file_menu(self):
-        menu = self.menuBar().addMenu("&File")
+        self._menu_file = self.menuBar().addMenu(tr("&File"))
 
-        act_open = QAction("&Open…", self)
-        act_open.setShortcut("Ctrl+O")
-        act_open.triggered.connect(self._on_open)
-        menu.addAction(act_open)
+        self._act_open = QAction(tr("&Open…"), self)
+        self._act_open.setShortcut("Ctrl+O")
+        self._act_open.triggered.connect(self._on_open)
+        self._menu_file.addAction(self._act_open)
 
-        act_export = QAction("&Export PNG…", self)
-        act_export.setShortcut("Ctrl+E")
-        act_export.triggered.connect(self._on_export)
-        menu.addAction(act_export)
+        self._act_export = QAction(tr("&Export PNG…"), self)
+        self._act_export.setShortcut("Ctrl+E")
+        self._act_export.triggered.connect(self._on_export)
+        self._menu_file.addAction(self._act_export)
 
-        menu.addSeparator()
+        self._menu_file.addSeparator()
 
-        act_quit = QAction("&Quit", self)
-        act_quit.setShortcut("Ctrl+Q")
-        act_quit.triggered.connect(self.close)
-        menu.addAction(act_quit)
+        self._act_settings = QAction(tr("&Settings…"), self)
+        self._act_settings.setShortcut("Ctrl+,")
+        self._act_settings.triggered.connect(self._on_settings)
+        self._menu_file.addAction(self._act_settings)
 
-    def _setup_view_menu(self):
-        menu = self.menuBar().addMenu("&View")
+        self._menu_file.addSeparator()
 
-        mode_menu = menu.addMenu("Theme")
-        mode_group = QActionGroup(self)
-        mode_group.setExclusive(True)
+        self._act_quit = QAction(tr("&Quit"), self)
+        self._act_quit.setShortcut("Ctrl+Q")
+        self._act_quit.triggered.connect(self.close)
+        self._menu_file.addAction(self._act_quit)
 
-        for mode in ThemeMode:
-            act = QAction(MODE_LABELS[mode], self)
-            act.setCheckable(True)
-            act.setChecked(self._mode == mode)
-            act.triggered.connect(lambda checked, m=mode: self._set_mode(m))
-            mode_group.addAction(act)
-            mode_menu.addAction(act)
+    # ------------------------------------------------------------------
+    # Runtime re-translation
+    # ------------------------------------------------------------------
 
-    def _set_mode(self, mode: ThemeMode):
-        self._mode = mode
-        self._settings["theme_mode"] = mode.value
-        save(self._settings)
-        self._apply_theme()
+    def _retranslate_ui(self):
+        """Re-translate all user-visible strings after a language change."""
+        self.setWindowTitle(tr("dspng — PSD → PNG"))
+
+        self._menu_file.setTitle(tr("&File"))
+        self._menu_help.setTitle(tr("&Help"))
+
+        self._act_open.setText(tr("&Open…"))
+        self._act_export.setText(tr("&Export PNG…"))
+        self._act_quit.setText(tr("&Quit"))
+        self._act_settings.setText(tr("&Settings…"))
+
+        self._act_about.setText(tr("&About"))
+
+        self._title_render.setText(tr("Render"))
+        self._title_files.setText(tr("Files"))
+        self._title_layers.setText(tr("Layers"))
 
     # ------------------------------------------------------------------
     # Help menu
     # ------------------------------------------------------------------
 
     def _setup_help_menu(self):
-        menu = self.menuBar().addMenu("&Help")
+        self._menu_help = self.menuBar().addMenu(tr("&Help"))
 
-        act_shortcuts = QAction("&Shortcuts", self)
-        act_shortcuts.setShortcut("F1")
-        act_shortcuts.triggered.connect(self._on_shortcuts)
-        menu.addAction(act_shortcuts)
-
-        act_about = QAction("&About", self)
-        act_about.triggered.connect(self._on_about)
-        menu.addAction(act_about)
-
-    def _on_shortcuts(self):
-        QMessageBox.information(
-            self,
-            "Keyboard Shortcuts",
-            "<h3>Keyboard Shortcuts</h3>"
-            "<table cellspacing='8'>"
-            "<tr><th colspan='2' align='left'>Global</th></tr>"
-            "<tr><td><b>Ctrl+O</b></td><td>Open PSD file</td></tr>"
-            "<tr><td><b>Ctrl+E</b></td><td>Export PNG</td></tr>"
-            "<tr><td><b>Ctrl+Q</b></td><td>Quit</td></tr>"
-            "<tr><td><b>F1</b></td><td>This dialog</td></tr>"
-            "<tr><td colspan='2'><hr></td></tr>"
-            "<tr><th colspan='2' align='left'>Render Canvas</th></tr>"
-            "<tr><td><b>Scroll wheel</b></td><td>Zoom in/out</td></tr>"
-            "<tr><td><b>Middle-click drag</b></td><td>Pan</td></tr>"
-            "<tr><td><b>Alt+Left-click drag</b></td><td>Pan</td></tr>"
-            "<tr><td><b>Double-click</b></td><td>Fit to view</td></tr>"
-            "<tr><td><b>Left-click drag</b></td><td>Drag export PNG</td></tr>"
-            "<tr><td colspan='2'><hr></td></tr>"
-            "<tr><th colspan='2' align='left'>Layer Panel</th></tr>"
-            "<tr><td><b>S / M / L</b></td><td>Row height presets</td></tr>"
-            "<tr><td><b>Up / Down</b></td><td>Move layer/group</td></tr>"
-            "<tr><td><b>Checkbox</b></td><td>Toggle visibility</td></tr>"
-            "<tr><td colspan='2'><hr></td></tr>"
-            "<tr><th colspan='2' align='left'>File List</th></tr>"
-            "<tr><td><b>Drag-drop .psd</b></td><td>Import file</td></tr>"
-            "<tr><td><b>Reload</b></td><td>Re-read selected PSD</td></tr>"
-            "</table>",
-        )
+        self._act_about = QAction(tr("&About"), self)
+        self._act_about.triggered.connect(self._on_about)
+        self._menu_help.addAction(self._act_about)
 
     def _on_about(self):
+        from PySide6.QtWidgets import QApplication
+
+        version = QApplication.instance().applicationVersion()
         QMessageBox.about(
             self,
-            "About dspng",
-            "<h2>dspng</h2>"
-            "<p>A standalone tool for rendering PSD files to PNG<br>"
-            "without launching Photoshop.</p>"
-            "<p><b>Author:</b> johanvx (<a href='https://github.com/johanvx'>github.com/johanvx</a>)</p>"
-            "<p><b>Source:</b> <a href='https://github.com/ZundaPod/dspng'>github.com/ZundaPod/dspng</a></p>"
-            "<p><b>License:</b> GPL-2.0 (<a href='https://spdx.org/licenses/GPL-2.0-only.html'>spdx.org</a>)</p>",
+            tr("About dspng"),
+            f"<h2>dspng v{version}</h2>"
+            + tr(
+                "<p>A standalone tool for rendering PSD files to PNG<br>"
+                "without launching Photoshop.</p>"
+                "<p><b>Author:</b> johanvx "
+                "(<a href='https://github.com/johanvx'>github.com/johanvx</a>)</p>"
+                "<p><b>Source:</b> "
+                "<a href='https://github.com/ZundaPod/dspng'>github.com/ZundaPod/dspng</a></p>"
+                "<p><b>License:</b> GPL-2.0 "
+                "(<a href='https://spdx.org/licenses/GPL-2.0-only.html'>spdx.org</a>)</p>"
+            ),
         )
 
     # ------------------------------------------------------------------
@@ -273,13 +280,21 @@ class MainWindow(QMainWindow):
     def _on_thumbnail_changed(self):
         self._file_list.refresh_current_thumbnail()
 
+    def _on_export_occurred(self):
+        self._file_list.refresh_counter()
+
+    def _on_settings(self):
+        dlg = SettingsDialog(self._settings, self)
+        dlg.settings_changed.connect(self._apply_theme)
+        dlg.exec()
+
     def _on_open(self):
         paths, _ = QFileDialog.getOpenFileNames(
-            self, "Open PSD Files", "", "Photoshop Files (*.psd)"
+            self, tr("Open PSD Files"), "", tr("Photoshop Files (*.psd)")
         )
         for p in paths:
             self._store.add_document(Path(p))
-        self._file_list.refresh()
+        self._file_list.refresh_counter()
         doc = self._store.selected_document
         self._canvas.set_document(doc)
         self._layer_panel.set_document(doc)
@@ -289,7 +304,7 @@ class MainWindow(QMainWindow):
         if doc is None:
             return
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export PNG", f"{doc.name}.png", "PNG Image (*.png)"
+            self, tr("Export PNG"), f"{doc.name}.png", tr("PNG Image (*.png)")
         )
         if path:
             from ..renderer import export_png

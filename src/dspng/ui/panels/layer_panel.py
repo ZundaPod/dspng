@@ -26,7 +26,6 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import (
-    QCheckBox,
     QHBoxLayout,
     QHeaderView,
     QPushButton,
@@ -42,6 +41,8 @@ from ...renderer import (
     generate_group_thumbnail,
     generate_layer_thumbnail,
 )
+from ..icon_manager import icon
+from ..locale_manager import tr
 from ..theme_tokens import SPACING_NONE
 
 
@@ -104,9 +105,10 @@ def _pil_to_qpixmap(pil_img) -> QPixmap:
 class _VisibilityDelegate(QStyledItemDelegate):
     """Delegate for the visibility column (column 1).
 
-    Renders a centered QCheckBox.  Using a real widget delegate avoids
-    the PySide6 quirk where ItemIsUserCheckable + setData(CheckStateRole)
-    does not reliably update the visual state.
+    Renders an eye (visible) or eye-off (hidden) icon button.
+    Using a real widget delegate avoids the PySide6 quirk where
+    ItemIsUserCheckable + setData(CheckStateRole) does not reliably
+    update the visual state.
     """
 
     visibility_changed = Signal()
@@ -115,33 +117,44 @@ class _VisibilityDelegate(QStyledItemDelegate):
         super().__init__(parent)
 
     def createEditor(self, parent, option, index):
-        cb = QCheckBox(parent)
-        cb.setAutoFillBackground(True)
-        cb.toggled.connect(lambda checked, idx=index: self._on_toggled(idx, checked))
-        return cb
+        btn = QPushButton(parent)
+        btn.setFlat(True)
+        btn.setIconSize(QSize(18, 18))
+        btn.clicked.connect(lambda checked, idx=index: self._on_clicked(idx))
+        return btn
 
-    def setEditorData(self, editor: QCheckBox, index: QModelIndex):
-        editor.blockSignals(True)
+    def setEditorData(self, editor: QPushButton, index: QModelIndex):
         state = index.data(Qt.ItemDataRole.CheckStateRole)
-        editor.setChecked(state == Qt.CheckState.Checked)
-        editor.blockSignals(False)
+        visible = state == Qt.CheckState.Checked
+        self._set_eye_icon(editor, visible)
 
     def setModelData(self, editor, model, index):
-        pass  # the toggled signal already wrote the value
+        pass
 
     def updateEditorGeometry(self, editor, option, index):
         editor.setGeometry(option.rect)
 
     def paint(self, painter, option, index):
-        pass  # the persistent editor widget is always visible
+        pass
 
-    def _on_toggled(self, index: QModelIndex, checked: bool):
+    def _on_clicked(self, index: QModelIndex):
         model = index.model()
         if model is None:
             return
-        new_state = Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked
+        current = index.data(Qt.ItemDataRole.CheckStateRole)
+        new_state = (
+            Qt.CheckState.Unchecked
+            if current == Qt.CheckState.Checked
+            else Qt.CheckState.Checked
+        )
         model.setData(index, new_state, Qt.ItemDataRole.CheckStateRole)
         self.visibility_changed.emit()
+
+    @staticmethod
+    def _set_eye_icon(btn: QPushButton, visible: bool):
+        name = "eye" if visible else "eye-closed"
+        btn.setIcon(icon("status", name))
+        btn.setIconSize(QSize(18, 18))
 
 
 # ======================================================================
@@ -468,6 +481,11 @@ class LayerPanel(QWidget):
         self._doc: Optional[PsdDocument] = None
         self._thumb_size = self._SIZE_PRESETS[1]  # default: M
         self._setup_ui()
+        self._update_vis_all_button()
+
+        from ..locale_manager import LocaleManager
+
+        LocaleManager().language_changed.connect(self._retranslate_ui)
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -491,12 +509,51 @@ class LayerPanel(QWidget):
 
         button_row.addStretch()
 
-        self._btn_up = QPushButton("↑ Up")
-        self._btn_down = QPushButton("↓ Down")
+        # Expand/collapse all
+        self._btn_expand_all = QPushButton()
+        self._btn_expand_all.setIcon(icon("arrows", "layout-navbar-expand"))
+        btn.setIconSize(QSize(20, 20))
+        self._btn_expand_all.setToolTip(tr("Expand all groups"))
+        self._btn_expand_all.clicked.connect(self._expand_all)
+        button_row.addWidget(self._btn_expand_all)
+
+        self._btn_collapse_all = QPushButton()
+        self._btn_collapse_all.setIcon(icon("arrows", "layout-navbar-collapse"))
+        btn.setIconSize(QSize(20, 20))
+        self._btn_collapse_all.setToolTip(tr("Collapse all groups"))
+        self._btn_collapse_all.clicked.connect(self._collapse_all)
+        button_row.addWidget(self._btn_collapse_all)
+
+        # Tri-state visibility (eye icon)
+        self._btn_vis_all = QPushButton()
+        self._btn_vis_all.setFlat(True)
+        self._btn_vis_all.setIconSize(QSize(18, 18))
+        self._btn_vis_all.setToolTip(tr("Toggle all visibility"))
+        self._btn_vis_all.clicked.connect(self._on_vis_all_clicked)
+        button_row.addWidget(self._btn_vis_all)
+
+        # Up/down
+        self._btn_up = QPushButton()
+        self._btn_up.setIcon(icon("arrows", "arrow-up"))
+        btn.setIconSize(QSize(20, 20))
+        self._btn_up.setToolTip(tr("Move up"))
+        self._btn_down = QPushButton()
+        self._btn_down.setIcon(icon("arrows", "arrow-down"))
+        btn.setIconSize(QSize(20, 20))
+        self._btn_down.setToolTip(tr("Move down"))
         self._btn_up.clicked.connect(lambda: self._move_selected(1))
         self._btn_down.clicked.connect(lambda: self._move_selected(-1))
         button_row.addWidget(self._btn_up)
         button_row.addWidget(self._btn_down)
+
+        # Save to PSD
+        self._btn_save_psd = QPushButton()
+        self._btn_save_psd.setIcon(icon("actions", "device-floppy"))
+        btn.setIconSize(QSize(20, 20))
+        self._btn_save_psd.setToolTip(tr("Save visibility and expand state to PSD"))
+        self._btn_save_psd.clicked.connect(self._save_to_psd)
+        button_row.addWidget(self._btn_save_psd)
+
         layout.addLayout(button_row)
 
         # --- Tree view ---
@@ -525,14 +582,22 @@ class LayerPanel(QWidget):
         self._vis_delegate.visibility_changed.connect(self._on_visibility_toggled)
         self._tree.setItemDelegateForColumn(1, self._vis_delegate)
 
+        # Keep model open_folder in sync with tree view expand/collapse.
+        self._tree.expanded.connect(self._on_item_expanded)
+        self._tree.collapsed.connect(self._on_item_collapsed)
+
         # Persistent editors: keep the checkbox widgets always visible.
         self._model.modelReset.connect(self._on_model_reset)
-        self._model.layoutChanged.connect(self._on_layout_changed)
 
         layout.addWidget(self._tree, stretch=1)
 
         # Apply initial icon size.
         self._apply_icon_size()
+
+    def _retranslate_ui(self):
+        """Re-translate button tooltips after a language change."""
+        self._btn_up.setToolTip(tr("Move up"))
+        self._btn_down.setToolTip(tr("Move down"))
 
     # ------------------------------------------------------------------
     # Public API
@@ -541,12 +606,32 @@ class LayerPanel(QWidget):
     def set_document(self, doc: Optional[PsdDocument]):
         self._doc = doc
         self._model.set_document(doc)
-        self._tree.expandAll()
+        self._expand_from_psd()
         self._open_persistent_editors()
+        self._update_vis_all_button()
 
     # ------------------------------------------------------------------
     # Visibility toggled (from delegate)
     # ------------------------------------------------------------------
+
+    def _expand_from_psd(self):
+        """Expand groups based on their PSD open_folder state, collapsing
+        the rest.  Called on initial document load."""
+        if self._doc is None:
+            return
+        self._tree.collapseAll()
+        self._expand_recursive(QModelIndex())
+
+    def _expand_recursive(self, parent: QModelIndex):
+        """Recursively expand groups whose open_folder is True."""
+        model = self._model
+        for row in range(model.rowCount(parent)):
+            idx = model.index(row, 0, parent)
+            wrapper = idx.internalPointer()
+            if wrapper and isinstance(wrapper.item, LayerGroup):
+                if wrapper.item.open_folder:
+                    self._tree.expand(idx)
+                    self._expand_recursive(idx)
 
     def _on_visibility_toggled(self):
         """Called when a checkbox is toggled in the delegate."""
@@ -556,6 +641,7 @@ class LayerPanel(QWidget):
             self._refresh_tree_decorations()
         self.layer_visibility_changed.emit()
         self.thumbnail_changed.emit()
+        self._update_vis_all_button()
 
     def _set_size(self, px: int):
         """Switch to a new thumbnail/row size."""
@@ -615,29 +701,133 @@ class LayerPanel(QWidget):
                 self._tree.setCurrentIndex(idx)
                 return
 
+    def _save_to_psd(self):
+        """Write current visibility and expand state back to the PSD file."""
+        if self._doc is None:
+            return
+        from PySide6.QtWidgets import QMessageBox
+
+        reply = QMessageBox.question(
+            self,
+            tr("Save to PSD"),
+            tr("This will modify the original PSD file. Continue?"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            from psd_tools import PSDImage
+
+            psd = PSDImage.open(self._doc.path)
+            for psd_layer, our_item in zip(psd, self._doc.layer_tree):
+                self._apply_state_to_psd(psd_layer, our_item)
+            psd.save(self._doc.path)
+            QMessageBox.information(self, tr("Save to PSD"), tr("Saved successfully."))
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                tr("Save to PSD"),
+                tr("Failed to save: ") + str(e),
+            )
+
+    def _apply_state_to_psd(self, psd_layer, our_item):
+        psd_layer.visible = our_item.visible
+        if hasattr(our_item, "children") and hasattr(psd_layer, "open_folder"):
+            psd_layer.open_folder = our_item.open_folder
+            for psd_child, our_child in zip(psd_layer, our_item.children):
+                self._apply_state_to_psd(psd_child, our_child)
+
     # ------------------------------------------------------------------
     # Tree decoration refresh
     # ------------------------------------------------------------------
 
     def _refresh_tree_decorations(self):
-        """Force the tree to repaint all DecorationRole cells."""
-        self._model.layoutChanged.emit()
+        """Force the tree to repaint all DecorationRole and CheckStateRole
+        cells without resetting expand state."""
+        top_left = self._model.index(0, 0)
+        bottom_right = self._model.index(self._model.rowCount() - 1, 1)
+        self._model.dataChanged.emit(
+            top_left,
+            bottom_right,
+            [Qt.ItemDataRole.DecorationRole, Qt.ItemDataRole.CheckStateRole],
+        )
 
     # ------------------------------------------------------------------
     # Persistent editors for visibility checkboxes
     # ------------------------------------------------------------------
 
-    def _on_model_reset(self):
-        self._tree.expandAll()
-        self._open_persistent_editors()
+    def _on_item_expanded(self, index: QModelIndex):
+        """Sync model open_folder when user expands a group."""
+        wrapper = index.internalPointer()
+        if wrapper and isinstance(wrapper.item, LayerGroup):
+            wrapper.item.open_folder = True
 
-    def _on_layout_changed(self, _1, _2):
-        """Called after drag-and-drop reorder."""
+    def _on_item_collapsed(self, index: QModelIndex):
+        """Sync model open_folder when user collapses a group."""
+        wrapper = index.internalPointer()
+        if wrapper and isinstance(wrapper.item, LayerGroup):
+            wrapper.item.open_folder = False
+
+    def _expand_all(self):
         self._tree.expandAll()
+        self._sync_all_open_folders(True)
+
+    def _collapse_all(self):
+        self._tree.collapseAll()
+        self._sync_all_open_folders(False)
+
+    def _sync_all_open_folders(self, value: bool):
+        """Recursively set open_folder on all groups to *value*."""
+        self._sync_open_recursive(QModelIndex(), value)
+
+    def _sync_open_recursive(self, parent: QModelIndex, value: bool):
+        model = self._model
+        for row in range(model.rowCount(parent)):
+            idx = model.index(row, 0, parent)
+            wrapper = idx.internalPointer()
+            if wrapper and isinstance(wrapper.item, LayerGroup):
+                wrapper.item.open_folder = value
+                self._sync_open_recursive(idx, value)
+
+    def _on_vis_all_clicked(self):
+        """Eye button: toggle between all-visible and all-hidden."""
+        if self._doc is None:
+            return
+        all_visible = all(item.visible for item in self._doc.layer_tree)
+        target = not all_visible
+        self._set_all_visibility(self._doc.layer_tree, target)
+        self._update_vis_all_button()
+        self._on_visibility_toggled()
+
+    def _update_vis_all_button(self):
+        """Update eye icon to reflect current visibility."""
+        if self._doc is None or not self._doc.layer_tree:
+            self._btn_vis_all.setIcon(icon("status", "eye-off"))
+            return
+        visible_count = sum(1 for item in self._doc.layer_tree if item.visible)
+        total = len(self._doc.layer_tree)
+        if visible_count == total:
+            icon_name = "eye"
+        elif visible_count == 0:
+            icon_name = "eye-off"
+        else:
+            icon_name = "eye-dotted"
+        self._btn_vis_all.setIcon(icon("status", icon_name))
+
+    def _set_all_visibility(self, items: list, visible: bool):
+        """Recursively set visibility on all items."""
+        for item in items:
+            item.visible = visible
+            item.invalidate_thumbnail()
+            if isinstance(item, LayerGroup):
+                self._set_all_visibility(item.children, visible)
+        if self._doc:
+            self._doc.invalidate_thumbnail()
+
+    def _on_model_reset(self):
+        self._expand_from_psd()
         self._open_persistent_editors()
-        self.layer_order_changed.emit()
-        self.layer_visibility_changed.emit()
-        self.thumbnail_changed.emit()
 
     def _open_persistent_editors(self):
         """Open persistent editor on column 1 for every visible row."""
