@@ -192,8 +192,14 @@ msgstr "上移"
 msgid "Move down"
 msgstr "下移"
 
-msgid "+ button / Drag and drop .psd"
-msgstr "+ 按钮 / 拖放 .psd"
+msgid "Plus icon button / Drag and drop .psd"
+msgstr "加号图标按钮 / 拖放 .psd"
+
+msgid "Minus icon button"
+msgstr "减号图标按钮"
+
+msgid "Reload icon button"
+msgstr "重新加载图标按钮"
 
 msgid "Add file"
 msgstr "添加文件"
@@ -201,8 +207,11 @@ msgstr "添加文件"
 msgid "Canvas"
 msgstr "画布"
 
-msgid "Click checkbox"
-msgstr "点击复选框"
+msgid "Toggle layer visibility"
+msgstr "切换图层可见性"
+
+msgid "Eye icon button"
+msgstr "眼睛图标按钮"
 
 msgid "Double-click"
 msgstr "双击"
@@ -237,8 +246,7 @@ msgstr "左键拖拽"
 msgid "Middle-click / Right-click / Alt+Left-click drag"
 msgstr "中键 / 右键 / Alt+左键 拖拽"
 
-msgid "Move up / down"
-msgstr "上移 / 下移"
+
 
 msgid "Open PSD"
 msgstr "打开 PSD"
@@ -264,20 +272,30 @@ msgstr "滚轮"
 msgid "Settings"
 msgstr "设置"
 
-msgid "Toggle visibility"
-msgstr "切换可见性"
-
 msgid "Zoom in / out"
 msgstr "放大 / 缩小"
 
-msgid "↑ / ↓ buttons"
-msgstr "↑ / ↓ 按钮"
+msgid "Tri-state eye icon button"
+msgstr "三态眼睛图标按钮"
 
-msgid "↻ button"
-msgstr "↻ 按钮"
+msgid "Arrow-up icon button"
+msgstr "上箭头图标按钮"
 
-msgid "− button"
-msgstr "− 按钮"
+msgid "Arrow-down icon button"
+msgstr "下箭头图标按钮"
+
+msgid "Expand icon button"
+msgstr "展开图标按钮"
+
+msgid "Collapse icon button"
+msgstr "折叠图标按钮"
+
+msgid "Floppy-disk icon button"
+msgstr "软盘图标按钮"
+
+
+
+
 
 msgid "Files"
 msgstr "文件"

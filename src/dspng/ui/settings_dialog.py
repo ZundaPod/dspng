@@ -659,17 +659,22 @@ _KEYMAPS: list[tuple[str, list[tuple[str, str]]]] = [
     (
         "Layer Panel",
         [
-            ("Toggle visibility", "Click checkbox"),
-            ("Move up / down", "↑ / ↓ buttons"),
+            ("Toggle layer visibility", "Eye icon button"),
+            ("Toggle all visibility", "Tri-state eye icon button"),
+            ("Move up", "Arrow-up icon button"),
+            ("Move down", "Arrow-down icon button"),
+            ("Expand all groups", "Expand icon button"),
+            ("Collapse all groups", "Collapse icon button"),
+            ("Save to PSD", "Floppy-disk icon button"),
             ("Reorder", "Drag and drop"),
         ],
     ),
     (
         "File List",
         [
-            ("Add file", "+ button / Drag and drop .psd"),
-            ("Remove file", "− button"),
-            ("Reload file", "↻ button"),
+            ("Add file", "Plus icon button / Drag and drop .psd"),
+            ("Remove file", "Minus icon button"),
+            ("Reload file", "Reload icon button"),
         ],
     ),
 ]

@@ -194,8 +194,14 @@ msgstr "Move up"
 msgid "Move down"
 msgstr "Move down"
 
-msgid "+ button / Drag and drop .psd"
-msgstr "+ button / Drag and drop .psd"
+msgid "Plus icon button / Drag and drop .psd"
+msgstr "Plus icon button / Drag and drop .psd"
+
+msgid "Minus icon button"
+msgstr "Minus icon button"
+
+msgid "Reload icon button"
+msgstr "Reload icon button"
 
 msgid "Add file"
 msgstr "Add file"
@@ -203,8 +209,11 @@ msgstr "Add file"
 msgid "Canvas"
 msgstr "Canvas"
 
-msgid "Click checkbox"
-msgstr "Click checkbox"
+msgid "Toggle layer visibility"
+msgstr "Toggle layer visibility"
+
+msgid "Eye icon button"
+msgstr "Eye icon button"
 
 msgid "Double-click"
 msgstr "Double-click"
@@ -239,8 +248,7 @@ msgstr "Left-click drag"
 msgid "Middle-click / Right-click / Alt+Left-click drag"
 msgstr "Middle-click / Right-click / Alt+Left-click drag"
 
-msgid "Move up / down"
-msgstr "Move up / down"
+
 
 msgid "Open PSD"
 msgstr "Open PSD"
@@ -266,20 +274,30 @@ msgstr "Scroll wheel"
 msgid "Settings"
 msgstr "Settings"
 
-msgid "Toggle visibility"
-msgstr "Toggle visibility"
-
 msgid "Zoom in / out"
 msgstr "Zoom in / out"
 
-msgid "↑ / ↓ buttons"
-msgstr "↑ / ↓ buttons"
+msgid "Tri-state eye icon button"
+msgstr "Tri-state eye icon button"
 
-msgid "↻ button"
-msgstr "↻ button"
+msgid "Arrow-up icon button"
+msgstr "Arrow-up icon button"
 
-msgid "− button"
-msgstr "− button"
+msgid "Arrow-down icon button"
+msgstr "Arrow-down icon button"
+
+msgid "Expand icon button"
+msgstr "Expand icon button"
+
+msgid "Collapse icon button"
+msgstr "Collapse icon button"
+
+msgid "Floppy-disk icon button"
+msgstr "Floppy-disk icon button"
+
+
+
+
 
 msgid "Files"
 msgstr "Files"
