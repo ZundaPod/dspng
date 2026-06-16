@@ -5,7 +5,7 @@ A standalone tool for rendering PSD files to PNG without Photoshop.
 ## Features
 
 - **PSD Import**: Open PSD files via file dialog or drag-and-drop
-- **Layer Management**: Toggle visibility (eye/eye-closed icons), reorder layers/groups, expand/collapse all groups, tri-state bulk visibility
+- **Layer Management**: Toggle visibility (eye/eye-closed icons), reorder layers/groups via drag-and-drop or arrow buttons, expand/collapse all groups, tri-state bulk visibility, save state back to PSD
 - **Real-time Rendering**: Composite preview with zoom, pan (middle-click, right-click, Alt+left-click), and fit-to-view
 - **PNG Export**: Save dialog, drag-export with custom naming (`{name}_{counter:03d}.png`), per-file counter, configurable temp directory
 - **Theme Customisation**: Dark/Light/System theme modes, 14 customisable colour tokens, font family/size/weight, live preview
@@ -44,7 +44,7 @@ src/dspng/
     ├── settings_dialog.py   # Multi-tab settings (Appearance, Files, Keymaps)
     └── panels/
         ├── file_list.py      # File list with inline name/counter edit
-        ├── layer_panel.py    # Layer tree with eye icons, expand/collapse
+        ├── layer_panel.py    # Layer tree with eye icons, drag-drop reorder, save to PSD
         └── render_canvas.py  # Zoom/pan/drag-export canvas
 
 icons/                  # Tabler SVG icons

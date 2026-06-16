@@ -41,6 +41,4 @@
 
 ## Known issues
 
-- Save-to-PSD (⇓ button) hangs — `PSDImage.save()` blocks in the app
-  context but works in standalone tests.  Currently disabled.
 - Rule 6 nesting depth ~5 in panel containers — deferred.
