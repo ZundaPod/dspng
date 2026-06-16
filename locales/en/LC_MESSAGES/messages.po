@@ -66,28 +66,11 @@ msgstr "Export PNG"
 msgid "PNG Image (*.png)"
 msgstr "PNG Image (*.png)"
 
-# ---- File list panel ----
-msgid "+ Add"
-msgstr "+ Add"
-
-msgid "− Remove"
-msgstr "− Remove"
-
-msgid "Reload"
-msgstr "Reload"
-
 msgid "Load Error"
 msgstr "Load Error"
 
 msgid "Reload Error"
 msgstr "Reload Error"
-
-# ---- Layer panel ----
-msgid "↑ Up"
-msgstr "↑ Up"
-
-msgid "↓ Down"
-msgstr "↓ Down"
 
 msgid "&Settings…"
 msgstr "&Settings…"
@@ -194,35 +177,17 @@ msgstr "Move up"
 msgid "Move down"
 msgstr "Move down"
 
-msgid "Plus icon button / Drag and drop .psd"
-msgstr "Plus icon button / Drag and drop .psd"
-
-msgid "Minus icon button"
-msgstr "Minus icon button"
-
-msgid "Reload icon button"
-msgstr "Reload icon button"
-
-msgid "Add file"
-msgstr "Add file"
-
 msgid "Canvas"
 msgstr "Canvas"
 
 msgid "Toggle layer visibility"
 msgstr "Toggle layer visibility"
 
-msgid "Eye icon button"
-msgstr "Eye icon button"
-
 msgid "Double-click"
 msgstr "Double-click"
 
 msgid "Drag and drop"
 msgstr "Drag and drop"
-
-msgid "Export PNG"
-msgstr "Export PNG"
 
 msgid "Export PNG (drag)"
 msgstr "Export PNG (drag)"
@@ -259,48 +224,18 @@ msgstr "Pan"
 msgid "Quit"
 msgstr "Quit"
 
-msgid "Reload file"
-msgstr "Reload file"
-
-msgid "Remove file"
-msgstr "Remove file"
-
 msgid "Reorder"
 msgstr "Reorder"
 
 msgid "Scroll wheel"
 msgstr "Scroll wheel"
 
-msgid "Settings"
-msgstr "Settings"
-
 msgid "Zoom in / out"
 msgstr "Zoom in / out"
 
-msgid "Tri-state eye icon button"
-msgstr "Tri-state eye icon button"
-
-msgid "Arrow-up icon button"
-msgstr "Arrow-up icon button"
-
-msgid "Arrow-down icon button"
-msgstr "Arrow-down icon button"
-
-msgid "Expand icon button"
-msgstr "Expand icon button"
-
-msgid "Collapse icon button"
-msgstr "Collapse icon button"
-
-msgid "Floppy-disk icon button"
-msgstr "Floppy-disk icon button"
 
 
 
-
-
-msgid "Files"
-msgstr "Files"
 
 msgid "Temp files"
 msgstr "Temp files"
@@ -350,5 +285,6 @@ msgstr "Saved successfully."
 msgid "Failed to save: "
 msgstr "Failed to save: "
 
-msgid "This feature is not yet available."
-msgstr "This feature is not yet available."
+msgid " / Drag and drop .psd"
+msgstr " / Drag and drop .psd"
+

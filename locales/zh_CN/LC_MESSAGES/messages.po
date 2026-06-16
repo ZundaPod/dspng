@@ -64,28 +64,11 @@ msgstr "导出 PNG"
 msgid "PNG Image (*.png)"
 msgstr "PNG 图像 (*.png)"
 
-# ---- File list panel ----
-msgid "+ Add"
-msgstr "+ 添加"
-
-msgid "− Remove"
-msgstr "− 移除"
-
-msgid "Reload"
-msgstr "重新加载"
-
 msgid "Load Error"
 msgstr "加载错误"
 
 msgid "Reload Error"
 msgstr "重新加载错误"
-
-# ---- Layer panel ----
-msgid "↑ Up"
-msgstr "↑ 上移"
-
-msgid "↓ Down"
-msgstr "↓ 下移"
 
 msgid "&Settings…"
 msgstr "设置(&S)…"
@@ -192,35 +175,17 @@ msgstr "上移"
 msgid "Move down"
 msgstr "下移"
 
-msgid "Plus icon button / Drag and drop .psd"
-msgstr "加号图标按钮 / 拖放 .psd"
-
-msgid "Minus icon button"
-msgstr "减号图标按钮"
-
-msgid "Reload icon button"
-msgstr "重新加载图标按钮"
-
-msgid "Add file"
-msgstr "添加文件"
-
 msgid "Canvas"
 msgstr "画布"
 
 msgid "Toggle layer visibility"
 msgstr "切换图层可见性"
 
-msgid "Eye icon button"
-msgstr "眼睛图标按钮"
-
 msgid "Double-click"
 msgstr "双击"
 
 msgid "Drag and drop"
 msgstr "拖放"
-
-msgid "Export PNG"
-msgstr "导出 PNG"
 
 msgid "Export PNG (drag)"
 msgstr "导出 PNG (拖拽)"
@@ -257,48 +222,18 @@ msgstr "平移"
 msgid "Quit"
 msgstr "退出"
 
-msgid "Reload file"
-msgstr "重新加载文件"
-
-msgid "Remove file"
-msgstr "移除文件"
-
 msgid "Reorder"
 msgstr "重新排序"
 
 msgid "Scroll wheel"
 msgstr "滚轮"
 
-msgid "Settings"
-msgstr "设置"
-
 msgid "Zoom in / out"
 msgstr "放大 / 缩小"
 
-msgid "Tri-state eye icon button"
-msgstr "三态眼睛图标按钮"
-
-msgid "Arrow-up icon button"
-msgstr "上箭头图标按钮"
-
-msgid "Arrow-down icon button"
-msgstr "下箭头图标按钮"
-
-msgid "Expand icon button"
-msgstr "展开图标按钮"
-
-msgid "Collapse icon button"
-msgstr "折叠图标按钮"
-
-msgid "Floppy-disk icon button"
-msgstr "软盘图标按钮"
 
 
 
-
-
-msgid "Files"
-msgstr "文件"
 
 msgid "Temp files"
 msgstr "临时文件"
@@ -348,5 +283,6 @@ msgstr "保存成功。"
 msgid "Failed to save: "
 msgstr "保存失败："
 
-msgid "This feature is not yet available."
-msgstr "此功能暂未开放。"
+msgid " / Drag and drop .psd"
+msgstr " / 拖放 .psd"
+

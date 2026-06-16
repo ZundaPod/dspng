@@ -637,7 +637,7 @@ class AppearancePage(QWidget):
 # Keymaps Page — read-only display of all shortcuts
 # ======================================================================
 
-_KEYMAPS: list[tuple[str, list[tuple[str, str]]]] = [
+_KEYMAPS: list[tuple[str, list[tuple[str, str | tuple[str, str]]]]] = [
     (
         "File",
         [
@@ -659,34 +659,44 @@ _KEYMAPS: list[tuple[str, list[tuple[str, str]]]] = [
     (
         "Layer Panel",
         [
-            ("Toggle layer visibility", "Eye icon button"),
-            ("Toggle all visibility", "Tri-state eye icon button"),
-            ("Move up", "Arrow-up icon button"),
-            ("Move down", "Arrow-down icon button"),
-            ("Expand all groups", "Expand icon button"),
-            ("Collapse all groups", "Collapse icon button"),
-            ("Save to PSD", "Floppy-disk icon button"),
+            ("Toggle layer visibility", ("status", "eye")),
+            ("Toggle all visibility", ("status", "eye")),
+            ("Move up", ("arrows", "arrow-up")),
+            ("Move down", ("arrows", "arrow-down")),
+            ("Expand all groups", ("arrows", "layout-navbar-expand")),
+            ("Collapse all groups", ("arrows", "layout-navbar-collapse")),
+            ("Save to PSD", ("actions", "device-floppy")),
             ("Reorder", "Drag and drop"),
         ],
     ),
     (
         "File List",
         [
-            ("Add file", "Plus icon button / Drag and drop .psd"),
-            ("Remove file", "Minus icon button"),
-            ("Reload file", "Reload icon button"),
+            ("Add file", ("actions", "plus", " / Drag and drop .psd")),
+            ("Remove file", ("actions", "minus")),
+            ("Reload file", ("actions", "reload")),
         ],
     ),
 ]
 
 
 class KeymapsPage(QWidget):
-    """Read-only keymap reference — OBS-style page layout."""
+    """Read-only keymap reference — OBS-style page layout.
+
+    Shortcut values are either a plain ``str`` (displayed in a read-only
+    ``QLineEdit``) or a ``(category, name)`` tuple (rendered as the actual
+    icon button from the icon manager).  A three-element tuple
+    ``(category, name, suffix)`` renders an icon followed by a text label.
+    """
+
+    _ICON_SIZE = 20
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._translatable_groups: list[QGroupBox] = []
         self._translatable_labels: list[QLabel] = []
+        # (suffix QLabel, msgid) pairs for icon+suffix entries
+        self._translatable_suffixes: list[tuple[QLabel, str]] = []
         self._setup_ui()
 
     def _setup_ui(self):
@@ -733,10 +743,42 @@ class KeymapsPage(QWidget):
                 label.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
                 self._translatable_labels.append(label)
 
-                value = QLineEdit(tr(shortcut))
-                value.setReadOnly(True)
-                value.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-                form.addRow(label, value)
+                if isinstance(shortcut, tuple):
+                    # Icon entry: render the actual SVG icon instead of text.
+                    if len(shortcut) == 3:
+                        category, name, suffix_text = shortcut
+                        container = QWidget()
+                        hbox = QHBoxLayout(container)
+                        hbox.setContentsMargins(0, 0, 0, 0)
+                        hbox.setSpacing(SPACING_SM)
+
+                        btn = QPushButton()
+                        btn.setFlat(True)
+                        btn.setIcon(icon(category, name))
+                        btn.setIconSize(QSize(self._ICON_SIZE, self._ICON_SIZE))
+                        btn.setEnabled(False)
+                        hbox.addWidget(btn)
+
+                        suffix_label = QLabel(tr(suffix_text))
+                        self._translatable_suffixes.append((suffix_label, suffix_text))
+                        hbox.addWidget(suffix_label)
+                        hbox.addStretch()
+                        form.addRow(label, container)
+                    else:
+                        category, name = shortcut
+                        btn = QPushButton()
+                        btn.setFlat(True)
+                        btn.setIcon(icon(category, name))
+                        btn.setIconSize(QSize(self._ICON_SIZE, self._ICON_SIZE))
+                        btn.setEnabled(False)
+                        btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+                        form.addRow(label, btn)
+                else:
+                    # Text shortcut — read-only QLineEdit (unchanged).
+                    value = QLineEdit(tr(shortcut))
+                    value.setReadOnly(True)
+                    value.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+                    form.addRow(label, value)
 
             frame_layout.addWidget(group)
             frame_layout.addSpacing(SPACING_LG)
@@ -756,6 +798,9 @@ class KeymapsPage(QWidget):
                 if idx < len(self._translatable_labels):
                     self._translatable_labels[idx].setText(tr(action))
                     idx += 1
+
+        for suffix_label, msgid in self._translatable_suffixes:
+            suffix_label.setText(tr(msgid))
 
 
 # ======================================================================
