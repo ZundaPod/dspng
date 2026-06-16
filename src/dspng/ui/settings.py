@@ -25,7 +25,7 @@ def load() -> dict[str, Any]:
         data = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
         # Merge with defaults so new keys are always present.
         return {**_DEFAULTS, **data}
-    except (FileNotFoundError, json.JSONDecodeError):
+    except FileNotFoundError, json.JSONDecodeError:
         return dict(_DEFAULTS)
 
 

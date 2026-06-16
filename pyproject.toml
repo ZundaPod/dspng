@@ -23,5 +23,7 @@ allow-direct-references = true
 
 [dependency-groups]
 dev = [
+    "prek>=0.4.5",
     "pyinstaller>=6.21.0",
+    "ruff>=0.15.17",
 ]

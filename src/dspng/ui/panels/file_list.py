@@ -12,11 +12,9 @@ Supports:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtCore import (
     QAbstractListModel,
-    QMimeData,
     QModelIndex,
     QSize,
     Qt,
@@ -31,7 +29,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...models import PsdDocument
 from ...psd_manager import DocumentStore
 from ...renderer import generate_doc_thumbnail
 
@@ -44,7 +41,7 @@ _SIZE_LABELS = {32: "S", 64: "M", 128: "L"}
 
 class FileListModel(QAbstractListModel):
     """Qt model backed by DocumentStore.
-    
+
     Thumbnails are generated on the fly at the *icon_size* passed
     during construction.  Call `set_icon_size()` to resize.
     """
@@ -227,7 +224,9 @@ class FileListPanel(QWidget):
             self._store.remove_document(idx)
             self._model.refresh()
             self.document_selected.emit(
-                self._store.selected_index if self._store.selected_index is not None else -1
+                self._store.selected_index
+                if self._store.selected_index is not None
+                else -1
             )
 
     def _on_reload(self):
@@ -245,7 +244,10 @@ class FileListPanel(QWidget):
             self._store.add_document(path)
         except Exception as e:
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Reload Error", f"Failed to reload {path.name}: {e}")
+
+            QMessageBox.warning(
+                self, "Reload Error", f"Failed to reload {path.name}: {e}"
+            )
             return
         self._model.refresh()
         if self._store.selected_index is not None:
@@ -263,14 +265,13 @@ class FileListPanel(QWidget):
         doc.invalidate_thumbnail()
         idx = self._model.index(self._store.selected_index, 0)
         if idx.isValid():
-            self._model.dataChanged.emit(
-                idx, idx, [Qt.ItemDataRole.DecorationRole]
-            )
+            self._model.dataChanged.emit(idx, idx, [Qt.ItemDataRole.DecorationRole])
 
 
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
+
 
 def _pil_to_qpixmap(pil_img) -> QPixmap:
     data = pil_img.tobytes("raw", "RGBA")

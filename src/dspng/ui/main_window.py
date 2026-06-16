@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QActionGroup, QIcon
@@ -105,6 +104,7 @@ class MainWindow(QMainWindow):
                 if not icon.isNull():
                     self.setWindowIcon(icon)
                     from PySide6.QtWidgets import QApplication
+
                     app = QApplication.instance()
                     if app is not None:
                         app.setWindowIcon(icon)
@@ -128,7 +128,11 @@ class MainWindow(QMainWindow):
             is_dark = bg.lightnessF() < 0.5
             mode = ThemeMode.DARK if is_dark else ThemeMode.LIGHT
 
-        self._theme = make_dark(self._accent) if mode == ThemeMode.DARK else make_light(self._accent)
+        self._theme = (
+            make_dark(self._accent)
+            if mode == ThemeMode.DARK
+            else make_light(self._accent)
+        )
         self.setStyleSheet(generate_stylesheet(self._theme))
 
     # ------------------------------------------------------------------

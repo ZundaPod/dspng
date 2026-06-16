@@ -37,7 +37,6 @@ from PySide6.QtWidgets import (
 
 from ...models import LayerGroup, LayerNode, PsdDocument, TreeItem
 from ...renderer import (
-    DEFAULT_THUMB_SIZE,
     generate_group_thumbnail,
     generate_layer_thumbnail,
 )
@@ -49,6 +48,7 @@ from ...renderer import (
 
 # Checkerboard tile for transparent backgrounds.
 _CHECKER = None
+
 
 def _checkerboard_pixmap(size: int = 64) -> QPixmap:
     """Return a cached checkerboard QPixmap of *size* x *size*."""
@@ -96,6 +96,7 @@ def _pil_to_qpixmap(pil_img) -> QPixmap:
 # ======================================================================
 # Visibility Delegate
 # ======================================================================
+
 
 class _VisibilityDelegate(QStyledItemDelegate):
     """Delegate for the visibility column (column 1).
@@ -145,10 +146,13 @@ class _VisibilityDelegate(QStyledItemDelegate):
 # Tree Model
 # ======================================================================
 
+
 class _TreeItemWrapper:
     """Wraps a TreeItem so the QTreeView model can point to a unique node."""
 
-    def __init__(self, item: TreeItem, parent_wrapper: Optional[_TreeItemWrapper] = None):
+    def __init__(
+        self, item: TreeItem, parent_wrapper: Optional[_TreeItemWrapper] = None
+    ):
         self.item = item
         self.parent_wrapper = parent_wrapper
         self.children_wrappers: list[_TreeItemWrapper] = []
@@ -166,9 +170,7 @@ class LayerTreeModel(QAbstractItemModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._doc: Optional[PsdDocument] = None
-        self._root = _TreeItemWrapper(
-            LayerGroup(name="__root__", children=[])
-        )
+        self._root = _TreeItemWrapper(LayerGroup(name="__root__", children=[]))
         self._thumb_size = 64  # default, updated by LayerPanel
 
     # ------------------------------------------------------------------
@@ -192,7 +194,6 @@ class LayerTreeModel(QAbstractItemModel):
         """Regenerate all thumbnails at the given pixel size."""
         if self._doc is None:
             return
-        from ...renderer import generate_group_thumbnail, generate_layer_thumbnail
 
         self._regen_recursive(self._doc.layer_tree, self._doc, size)
 
@@ -217,14 +218,10 @@ class LayerTreeModel(QAbstractItemModel):
                 generate_group_thumbnail(item, doc, size)
 
     def _rebuild(self):
-        self._root = _TreeItemWrapper(
-            LayerGroup(name="__root__", children=[])
-        )
+        self._root = _TreeItemWrapper(LayerGroup(name="__root__", children=[]))
         if self._doc is None:
             return
-        self._root.item = LayerGroup(
-            name="__root__", children=self._doc.layer_tree
-        )
+        self._root.item = LayerGroup(name="__root__", children=self._doc.layer_tree)
         self._populate_children(self._root)
 
     def _populate_children(self, wrapper: _TreeItemWrapper):
@@ -447,6 +444,7 @@ class LayerTreeModel(QAbstractItemModel):
 # Panel Widget
 # ======================================================================
 
+
 class LayerPanel(QWidget):
     """Layer panel shown in the bottom-right of the main window."""
 
@@ -565,7 +563,7 @@ class LayerPanel(QWidget):
         self._apply_icon_size()
 
         # Invalidate cached thumbnails.
-        for doc_items in ([self._doc] if self._doc else []):
+        for doc_items in [self._doc] if self._doc else []:
             doc_items.invalidate_thumbnail()
         if self._doc is not None:
             self._model.invalidate_all_thumbnails()
@@ -580,7 +578,7 @@ class LayerPanel(QWidget):
 
     def _apply_icon_size(self):
         """Set the tree view's icon size and row height from current thumb size."""
-        from PySide6.QtCore import QSize
+
         px = self._thumb_size
         self._tree.setIconSize(QSize(px, px))
         # Row height = icon + padding so content doesn't clip.

@@ -20,11 +20,15 @@ from PySide6.QtGui import (
     QImage,
     QMouseEvent,
     QPainter,
-    QPen,
     QPixmap,
     QWheelEvent,
 )
-from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsScene, QGraphicsView, QWidget
+from PySide6.QtWidgets import (
+    QGraphicsPixmapItem,
+    QGraphicsScene,
+    QGraphicsView,
+    QWidget,
+)
 
 from ...models import PsdDocument
 from ...renderer import composite
@@ -44,7 +48,9 @@ class RenderCanvas(QGraphicsView):
         self._doc: Optional[PsdDocument] = None
 
         # View settings
-        self.setRenderHints(QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform)
+        self.setRenderHints(
+            QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform
+        )
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
         self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
         self.setDragMode(QGraphicsView.DragMode.NoDrag)
@@ -188,16 +194,13 @@ class RenderCanvas(QGraphicsView):
         if self._doc is None:
             return
         import tempfile
-        from pathlib import Path
 
         from ...renderer import composite_to_bytes
 
         png_bytes = composite_to_bytes(self._doc)
 
         # Write to a temp file so Premiere / Explorer can receive a real path.
-        tmp = tempfile.NamedTemporaryFile(
-            suffix=".png", prefix="dspng_", delete=False
-        )
+        tmp = tempfile.NamedTemporaryFile(suffix=".png", prefix="dspng_", delete=False)
         tmp.write(png_bytes)
         tmp.flush()
         tmp.close()
@@ -226,6 +229,7 @@ class RenderCanvas(QGraphicsView):
 # ======================================================================
 # Helpers
 # ======================================================================
+
 
 def _pil_to_qimage(pil_img) -> QImage:
     """Convert a PIL RGBA image to QImage."""

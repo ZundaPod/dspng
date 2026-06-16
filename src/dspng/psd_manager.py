@@ -115,7 +115,9 @@ class DocumentStore:
 
     @property
     def selected_document(self) -> Optional[PsdDocument]:
-        if self.selected_index is not None and 0 <= self.selected_index < len(self.documents):
+        if self.selected_index is not None and 0 <= self.selected_index < len(
+            self.documents
+        ):
             return self.documents[self.selected_index]
         return None
 
