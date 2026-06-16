@@ -77,6 +77,7 @@ class MainWindow(QMainWindow):
         # Wire up signals
         self._file_list.document_selected.connect(self._on_document_selected)
         self._layer_panel.layer_visibility_changed.connect(self._on_visibility_changed)
+        self._layer_panel.layer_order_changed.connect(self._on_visibility_changed)
         self._layer_panel.thumbnail_changed.connect(self._on_thumbnail_changed)
         self._canvas.export_occurred.connect(self._on_export_occurred)
         LocaleManager().language_changed.connect(self._retranslate_ui)

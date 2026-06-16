@@ -372,11 +372,12 @@ class LayerTreeModel(QAbstractItemModel):
 
     def flags(self, index: QModelIndex):
         if not index.isValid():
-            return Qt.ItemFlag.NoItemFlags
+            return Qt.ItemFlag.ItemIsDropEnabled
         base = (
             Qt.ItemFlag.ItemIsEnabled
             | Qt.ItemFlag.ItemIsSelectable
             | Qt.ItemFlag.ItemIsDragEnabled
+            | Qt.ItemFlag.ItemIsDropEnabled
         )
         if index.column() == 1:
             base |= Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEditable
@@ -403,6 +404,16 @@ class LayerTreeModel(QAbstractItemModel):
         mime.setProperty("wrappers", wrappers)
         return mime
 
+    def canDropMimeData(self, data, action, row, column, parent):
+        """Allow drops at root level and into ``LayerGroup`` items only."""
+        if action != Qt.DropAction.MoveAction:
+            return False
+        # Root level — always valid.
+        if not parent.isValid():
+            return True
+        wrapper = parent.internalPointer()
+        return isinstance(wrapper.item, LayerGroup)
+
     def dropMimeData(self, data, action, row, column, parent):
         if action != Qt.DropAction.MoveAction:
             return False
@@ -426,32 +437,44 @@ class LayerTreeModel(QAbstractItemModel):
                 return False
             pw = pw.parent_wrapper
 
-        # Only same-parent moves are supported for now.
-        if src_wrapper.parent_wrapper is not dest_wrapper:
-            return False
+        src_parent = src_wrapper.parent_wrapper
+        same_parent = src_parent is dest_wrapper
+        src_children: list = src_parent.item.children
 
-        n = len(dest_wrapper.children_wrappers)
+        # For same-parent moves, compute the target data index *before*
+        # removal because Qt's ``row`` is relative to the original layout.
+        if same_parent:
+            old_data_idx = src_children.index(src_wrapper.item)
+            n_before = len(src_children)
+            if row < 0 or row >= n_before:
+                data_idx = 0  # bottom of display = start of data
+            else:
+                # item.children is bottom-to-top; display is top-to-bottom.
+                # n - row converts display row to data insertion index.
+                data_idx = n_before - row
+            # If target is past the source, removal shifts it by one.
+            if old_data_idx < data_idx:
+                data_idx -= 1
 
-        # Convert view row to data-model index.
-        # children_wrappers is reversed (top-to-bottom),
-        # item.children is bottom-to-top.
-        if row < 0 or row >= n:
-            data_idx = n - 1  # append after display last = data first
-        else:
-            data_idx = n - 1 - row  # reverse mapping
+        # Remove from source parent.
+        src_children.remove(src_wrapper.item)
 
-        children: list = dest_wrapper.item.children
-        old_data_idx = children.index(src_wrapper.item)
+        # For cross-parent moves, compute position in the destination
+        # (which never contained the source, so no shift is needed).
+        dest_children: list = dest_wrapper.item.children
+        if not same_parent:
+            n = len(dest_children)
+            if row < 0 or row >= n:
+                data_idx = 0
+            else:
+                data_idx = n - row
 
-        # Adjust for removal shift.
-        if old_data_idx < data_idx:
-            data_idx -= 1
-
-        children.pop(old_data_idx)
-        children.insert(data_idx, src_wrapper.item)
+        dest_children.insert(data_idx, src_wrapper.item)
 
         # Rebuild wrappers from the data model.
         self.beginResetModel()
+        if not same_parent:
+            self._populate_children(src_parent)
         self._populate_children(dest_wrapper)
         self.invalidate_all_thumbnails()
         self.endResetModel()
@@ -886,6 +909,8 @@ class LayerPanel(QWidget):
     def _on_model_reset(self):
         self._expand_from_psd()
         self._open_persistent_editors()
+        self.layer_order_changed.emit()
+        self.thumbnail_changed.emit()
 
     def _open_persistent_editors(self):
         """Open persistent editor on column 1 for every visible row."""
