@@ -34,7 +34,7 @@ def main() -> int:
     # Basic application metadata (used by Qt for settings paths, etc.)
     app.setApplicationName("dspng")
     app.setOrganizationName("dspng")
-    app.setApplicationVersion("0.1.0")
+    app.setApplicationVersion("1.1.0")
 
     window = MainWindow()
     window.show()
