@@ -38,6 +38,7 @@ def _extract_layer(psd_layer) -> Optional[LayerNode]:
         opacity=(psd_layer.opacity or 255) / 255.0,
         blend_mode=str(psd_layer.blend_mode or "normal").lower(),
         original_index=0,  # Will be set by the caller
+        _psd_ref=psd_layer,
     )
 
 
@@ -64,6 +65,8 @@ def _extract_group(psd_group) -> LayerGroup:
         visible=psd_group.visible if psd_group.visible is not None else True,
         opacity=(psd_group.opacity or 255) / 255.0,
         original_index=0,
+        open_folder=getattr(psd_group, "open_folder", True),
+        _psd_ref=psd_group,
     )
 
 
@@ -95,6 +98,7 @@ def load_psd(path: Path) -> PsdDocument:
         width=psd.width,
         height=psd.height,
         layer_tree=layer_tree,
+        _psd=psd,
     )
 
 
@@ -115,13 +119,17 @@ class DocumentStore:
 
     @property
     def selected_document(self) -> Optional[PsdDocument]:
-        if self.selected_index is not None and 0 <= self.selected_index < len(self.documents):
+        if self.selected_index is not None and 0 <= self.selected_index < len(
+            self.documents
+        ):
             return self.documents[self.selected_index]
         return None
 
     def add_document(self, path: Path) -> PsdDocument:
         """Load and add a PSD, selecting it automatically."""
         doc = load_psd(path)
+        if not doc.display_name:
+            doc.display_name = doc.name
         self.documents.append(doc)
         self.selected_index = len(self.documents) - 1
         return doc

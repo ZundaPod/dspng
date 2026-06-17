@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 from PIL import Image
 
@@ -35,6 +35,9 @@ class LayerNode:
     opacity: float = 1.0
     blend_mode: str = "normal"
     original_index: int = 0
+
+    # Back-reference to original psd-tools layer for save-time sync.
+    _psd_ref: Any = field(default=None, repr=False)
 
     # Thumbnail cache — lazily populated by the renderer.
     thumbnail: Optional[Image.Image] = field(default=None, repr=False)
@@ -64,6 +67,10 @@ class LayerGroup:
     visible: bool = True
     opacity: float = 1.0
     original_index: int = 0
+    open_folder: bool = True  # from PSD section divider (expanded by default)
+
+    # Back-reference to original psd-tools group for save-time sync.
+    _psd_ref: Any = field(default=None, repr=False)
 
     # Thumbnail cache — lazily populated by the renderer.
     thumbnail: Optional[Image.Image] = field(default=None, repr=False)
@@ -99,6 +106,13 @@ class PsdDocument:
     width: int
     height: int
     layer_tree: list[TreeItem] = field(default_factory=list)
+
+    # Export naming.
+    display_name: str = ""  # editable name for export (defaults to name)
+    export_counter: int = 1
+
+    # Original psd-tools object for save-back support.
+    _psd: Any = field(default=None, repr=False)
 
     # Thumbnail cache for the file list panel.
     thumbnail: Optional[Image.Image] = field(default=None, repr=False)
