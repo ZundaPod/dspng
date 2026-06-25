@@ -24,8 +24,11 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
+    QPushButton,
+    QSizePolicy,
     QSplitter,
     QVBoxLayout,
     QWidget,
@@ -36,10 +39,10 @@ from .locale_manager import tr
 from .panels.file_list import FileListPanel
 from .panels.layer_panel import LayerPanel
 from .panels.render_canvas import RenderCanvas
-from .settings import get_mode, load
+from .settings import get_mode, get_temp_dir, load, save, set_temp_dir
 from .settings_dialog import SettingsDialog
 from .theme_manager import ThemeManager, ThemeMode
-from .theme_tokens import SPACING_NONE, SPACING_XS
+from .theme_tokens import SPACING_NONE, SPACING_SM, SPACING_XS
 
 
 class MainWindow(QMainWindow):
@@ -162,6 +165,7 @@ class MainWindow(QMainWindow):
 
         h_splitter = QSplitter(Qt.Orientation.Horizontal)
         render_panel, self._title_render = self._make_panel(tr("Render"), self._canvas)
+        self._add_temp_dir_row(render_panel)
         h_splitter.addWidget(render_panel)
         h_splitter.setStretchFactor(0, 3)
 
@@ -181,6 +185,39 @@ class MainWindow(QMainWindow):
         v_splitter.setSizes([250, 550])
 
         root_layout.addWidget(h_splitter)
+
+    def _add_temp_dir_row(self, render_panel: QFrame):
+        """Add a row under the render canvas title to display and change the temp directory.
+
+        Mirrors the temp-directory row in FilesPage so the main window
+        exposes the same control without opening the settings dialog.
+        """
+        layout = render_panel.layout()
+        if layout is None:
+            return
+
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(
+            SPACING_NONE, SPACING_NONE, SPACING_NONE, SPACING_NONE
+        )
+        row_layout.setSpacing(SPACING_SM)
+
+        label = QLabel(tr("Temp Directory"))
+        label.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        row_layout.addWidget(label)
+
+        self._temp_dir_edit = QLineEdit(get_temp_dir(self._settings))
+        self._temp_dir_edit.setReadOnly(True)
+        self._temp_dir_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        row_layout.addWidget(self._temp_dir_edit, stretch=1)
+
+        browse_btn = QPushButton(tr("Change…"))
+        browse_btn.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        browse_btn.clicked.connect(self._browse_temp_dir)
+        row_layout.addWidget(browse_btn)
+
+        layout.insertWidget(1, row_widget)
 
     # ------------------------------------------------------------------
     # Menus
@@ -234,6 +271,19 @@ class MainWindow(QMainWindow):
         self._title_render.setText(tr("Render"))
         self._title_files.setText(tr("Files"))
         self._title_layers.setText(tr("Layers"))
+
+        # Update the temp directory row after a language change.
+        if hasattr(self, "_temp_dir_edit"):
+            row = self._temp_dir_edit.parentWidget()
+            if row is not None:
+                row_layout = row.layout()
+                if row_layout is not None:
+                    label = row_layout.itemAt(0).widget()
+                    if isinstance(label, QLabel):
+                        label.setText(tr("Temp Directory"))
+                    button = row_layout.itemAt(2).widget()
+                    if isinstance(button, QPushButton):
+                        button.setText(tr("Change…"))
 
     # ------------------------------------------------------------------
     # Help menu
@@ -311,3 +361,11 @@ class MainWindow(QMainWindow):
             from ..renderer import export_png
 
             export_png(doc, Path(path))
+
+    def _browse_temp_dir(self):
+        """Open a directory dialog to change the drag-export temp directory."""
+        path = QFileDialog.getExistingDirectory(self, tr("Choose temp directory"))
+        if path:
+            self._temp_dir_edit.setText(path)
+            set_temp_dir(self._settings, path)
+            save(self._settings)
