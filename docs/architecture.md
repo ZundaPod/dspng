@@ -1,115 +1,189 @@
-# dspng 架构文档
+# dspng Architecture
 
-## 概述
+## Overview
 
-dspng 是一个独立的 PSD → PNG 渲染导出工具，无需启动 Photoshop。
-用户可以导入 PSD 文件，在内存中调整图层可见性和顺序，实时预览渲染结果，
-并通过拖拽或菜单导出 PNG。
+dspng is a standalone PSD → PNG render/export tool that does not require
+Photoshop.  Users import PSD files, adjust layer visibility and order in
+memory, preview the composited result in real time, and export PNGs via
+drag-and-drop or the File menu.
 
-## 技术栈
+## Tech stack
 
-| 组件 | 技术 |
-|---|---|
-| 语言 | Python 3.14 |
-| 包管理 | uv |
-| PSD 解析 | psd-tools |
-| GUI | PySide6 (Qt for Python) |
-| 图像处理 | Pillow (PIL) |
-| 打包 | PyInstaller |
+| Component       | Technology                         |
+|-----------------|------------------------------------|
+| Language        | Python 3.14                        |
+| Package manager | uv                                 |
+| PSD parsing     | psd-tools3                         |
+| GUI             | PySide6 (Qt for Python)            |
+| Image processing| Pillow (PIL)                       |
+| Packaging       | PyInstaller                        |
+| Linting         | Ruff (pre-commit hooks)            |
 
-## 目录结构
+## Directory structure
 
 ```
 src/dspng/
-├── __init__.py              # 包标识
-├── __main__.py              # python -m dspng 入口
-├── main.py                  # QApplication 启动 + CLI 参数
-├── models.py                # 数据模型 (LayerNode, LayerGroup, PsdDocument)
-├── psd_manager.py           # PSD 加载 + DocumentStore 状态管理
-├── renderer.py              # 图像合成 + 缩略图生成 + PNG 导出
+├── __init__.py
+├── __main__.py               # python -m dspng entry point
+├── main.py                   # QApplication bootstrap + CLI args
+├── models.py                 # Data models (LayerNode, LayerGroup, PsdDocument)
+├── psd_manager.py            # PSD loading + DocumentStore state management
+├── renderer.py               # Image compositing + thumbnails + PNG export
 └── ui/
     ├── __init__.py
-    ├── main_window.py        # 主窗口 (三栏布局 + 菜单 + 信号连接)
-    ├── styles.py             # 动态 QSS 样式表生成
-    ├── themes.py             # Lettepa 配色 + 主题定义
-    ├── settings.py           # 持久化设置 (~/.dspng/settings.json)
+    ├── main_window.py         # Main window (three-panel layout + menus + signals)
+    ├── theme_manager.py       # Central M3 theme engine (singleton), stylesheet compiles
+    ├── theme_tokens.py        # M3 spacing/radius/colour/font tokens (LIGHT, DARK)
+    ├── icon_manager.py        # SVG icon loader with theme-aware colour replacement
+    ├── locale_manager.py      # gettext i18n, tr() shortcut, runtime language switch
+    ├── settings.py            # Persistent user settings (~/.dspng/settings.json)
+    ├── settings_dialog.py     # Settings dialog (Appearance, Files, Keymaps pages)
     └── panels/
         ├── __init__.py
-        ├── file_list.py      # 文件列表面板
-        ├── layer_panel.py    # 图层树面板
-        └── render_canvas.py  # 渲染画布
+        ├── file_list.py       # File list panel (top-right)
+        ├── layer_panel.py     # Layer tree panel (bottom-right)
+        └── render_canvas.py   # Render canvas (left, zoomable/pannable QGraphicsView)
 
 scripts/
-├── build.py                 # PyInstaller 打包脚本
-└── make_icon.py             # 图标生成脚本
+├── build.py                  # PyInstaller packaging script
+├── compile_locales.py        # .po → .mo compiler (custom, no msgfmt dependency)
+└── make_icon.py              # App icon generator
 
-docs/                        # 文档
-issues/                      # 问题跟踪 (22 个已解决)
-icon.ico / icon.png          # 应用图标
+locales/
+├── en/LC_MESSAGES/           # English .po/.mo (pass-through)
+└── zh_CN/LC_MESSAGES/        # Simplified Chinese .po/.mo
+
+icons/                        # SVG icons organised by semantic category
+├── actions/                  # plus, minus, reload, device-floppy, …
+├── arrows/                   # arrow-up, arrow-down, layout-navbar-*, …
+└── status/                   # eye, eye-closed, eye-dotted, eye-off
+
+tabler-icons/                 # Upstream Tabler Icons source (outline + filled)
+docs/                         # Documentation
+issues/                       # Issue tracker
+icon.ico / icon.png           # App icons
 ```
 
-## 核心模块
+## Core modules
 
-### models.py — 数据模型
+### models.py — Data models
 
-纯数据容器，不包含任何 GUI 逻辑：
+Pure data containers, zero GUI logic:
 
-- **`LayerNode`**: 单个图层，持有 PIL 图像、偏移、可见性、透明度、混合模式。
-- **`LayerGroup`**: 图层组，递归包含子节点列表。
-- **`PsdDocument`**: 一个 PSD 文件的完整内存表示，包含图层树和尺寸。
+- **`LayerNode`**: single raster layer — holds PIL image, offset, visibility,
+  opacity, blend mode, and a back-reference (`_psd_ref`) for save-to-PSD sync.
+- **`LayerGroup`**: folder/group — recursive list of children, own visibility
+  and opacity, `open_folder` flag for expand/collapse persistence.
+- **`PsdDocument`**: full in-memory representation of a PSD file — layer tree,
+  dimensions, editable `display_name`, `export_counter`, and thumbnail cache.
 
-每个模型都提供 `invalidate_thumbnail()` 方法用于清除缩略图缓存。
+Every model provides `invalidate_thumbnail()` to clear cached thumbnails.
 
-### psd_manager.py — PSD 加载
+### psd_manager.py — PSD loading
 
-- `load_psd(path)` 用 psd-tools 打开 PSD，递归提取图层树。
-- psd-tools 按从下到上顺序遍历图层 (index 0 = 最底层)。
-  代码保留此顺序用于渲染合成。
-- `DocumentStore` 管理所有已加载文档和当前选中文档。
-- `PsdLoadError` 自定义异常，PSD 解析失败时抛出。
+- `load_psd(path)` opens a PSD via psd-tools3, recursively extracts the layer
+  tree, and attaches `_psd_ref` back-references to every model node for
+  save-back support.
+- Layers are traversed bottom-to-top (index 0 = bottom-most), matching
+  Photoshop's compositing order.
+- `DocumentStore` manages all loaded documents and the current selection.
+- `PsdLoadError` custom exception raised on parse failure.
 
-### renderer.py — 图像合成
+### renderer.py — Image compositing
 
-- `composite(doc)` 按从下到上顺序合成所有可见图层，返回 RGBA PIL Image。
-- 图层组透明度递归传播：子图层的有效透明度 = 自身透明度 × 所有祖先组透明度。
-- `make_thumbnail(image, size)` 生成固定正方形缩略图 (不保持宽高比)。
-- `generate_*_thumbnail()` 带缓存，缓存尺寸不匹配时自动重新生成。
-- `export_png()` / `composite_to_bytes()` 用于导出。
+- `composite(doc)` walks the layer tree in paint order and alpha-composites
+  each visible layer onto an RGBA canvas.  Layer opacity is applied by
+  scaling the alpha channel.  Group opacity propagates recursively.
+- Only the "normal" blend mode is implemented; all other modes fall back
+  to normal.
+- `make_thumbnail(image, size)` creates fixed-square thumbnails (aspect
+  ratio is NOT preserved — fills to fit).
+- `generate_*_thumbnail()` helpers with size-aware caching.
+- `export_png()` and `composite_to_bytes()` for file-save and drag-drop.
 
-### UI 层
+### UI layer
 
-- **主窗口**: 三栏布局 (渲染画布 | 文件列表 + 图层树)，用 QSplitter 实现可拖拽调整。
-  - View 菜单：Light/Dark/System 主题切换，6 种强调色变体。
-  - Help 菜单：Keyboard Shortcuts (F1)、About 对话框。
-  - 设置持久化到 `~/.dspng/settings.json`。
-- **文件列表**: 支持拖放 PSD 文件、点击选择、添加/删除/重新加载。
-  S/M/L 三种尺寸预设 (32/64/128px)。
-- **图层树**: 树形结构展示，自定义 Delegate 管理可见性复选框。
-  显示顺序从上到下 (Photoshop 一致)，底层数据从下到上。
-  S/M/L 三种行高预设 (32/64/128px)。上移/下移按钮。
-- **渲染画布**: 滚轮缩放、中键/Alt+左键平移、双击适配视口。
-  左键拖拽导出 PNG (写入临时文件，系统拖放)。
+- **Main window**: three-panel resizable layout via `QSplitter`:
+  - Left: Render canvas with temp-directory row and (future) flip controls.
+  - Top-right: File list panel.
+  - Bottom-right: Layer panel.
+  - File menu: Open, Export PNG, Settings, Quit.
+  - Help menu: About dialog.
+  - Settings persisted to `~/.dspng/settings.json`.
+- **File list**: drag-drop PSD files, click to select, add/remove/reload.
+  Per-item: thumbnail, inline-edit display name, export counter spinbox.
+  S/M/L thumbnail size presets (32/64/128 px).
+- **Layer panel**: tree view with custom `_VisibilityDelegate` for per-row
+  eye-icon toggles.  Drag-drop reorder.  Expand/collapse all, tri-state
+  visibility toggle (all/none/mixed).  Move-up/move-down buttons.
+  Save-to-PSD button syncs visibility, order, and expand state back to the
+  source file via `_psd_ref` back-references.
+  S/M/L row-height presets (32/64/128 px) via dynamic property styling.
+- **Render canvas**: `QGraphicsView` with checkerboard transparency
+  background.  Scroll-wheel zoom (centered on cursor), middle/right/Alt+left
+  pan, double-click fit-to-view, left-drag PNG export (writes to temp dir,
+  advances counter).
 
-### 主题系统
+### Theme system
 
-- `themes.py`: Lettepa 配色 (传统中国色名)，ThemeMode (Light/Dark/System)，6 种 Accent。
-- `styles.py`: `generate_stylesheet(theme)` 动态生成 QSS。
-- `settings.py`: 持久化到 `~/.dspng/settings.json`。
+- **`theme_tokens.py`**: defines Material Design 3 spacing tokens
+  (`SPACING_XS`…`SPACING_2XL`), radius tokens (`RADIUS_SM`…`RADIUS_LG`),
+  and `LIGHT`/`DARK` colour palettes.  Platform-adaptive font defaults
+  (Segoe UI / SF Pro Display / Noto Sans).
+- **`theme_manager.py`**: singleton `ThemeManager` that compiles the full Qt
+  stylesheet from token values via `build_stylesheet()`.  Supports runtime
+  light/dark/system mode switching, custom colour overrides (per-token),
+  and custom font family/size/weight overrides.  Pushes the compiled
+  stylesheet, font, and icon colour to `QApplication` on every change.
+  **All widget styling is centralised here — no inline `setStyleSheet()`.**
 
-## 信号流
+### i18n / Locale system
+
+- **`locale_manager.py`**: singleton `LocaleManager` wrapping Python's
+  `gettext`.  Pre-loads compiled `.mo` files from `locales/`.  Emits
+  `language_changed` signal so widgets can re-translate themselves.
+- **`tr(message)`**: shortcut that returns the translation for the active
+  language, falling back to the original string.
+- Available languages: English (`en`), Simplified Chinese (`zh_CN`).
+- `.po` → `.mo` compilation via `scripts/compile_locales.py` (pure Python,
+  no `msgfmt` dependency).
+
+### Icon system
+
+- **`icon_manager.py`**: singleton `IconManager` that loads Tabler outline
+  SVG icons from `icons/{category}/{name}.svg`.  Qt's SVG renderer does not
+  support `currentColor`, so the manager replaces it with the theme's
+  `text_primary` colour at render time.  Caches rendered `QIcon` objects;
+  clears cache on theme change (`set_color()`).
+- **`icon(category, name)`**: convenience shortcut.
+
+## Signal flow
 
 ```
-用户点击可见性 checkbox
-  → _VisibilityDelegate.toggled
-  → LayerTreeModel.setData (更新 item.visible + 清除祖先缩略图缓存)
+User clicks visibility eye-icon
+  → _VisibilityDelegate._on_clicked
+  → LayerTreeModel.setData (toggle item.visible + invalidate ancestor thumbnails)
   → LayerPanel._on_visibility_toggled
-    → regenerate thumbnails
-    → emit layer_visibility_changed → RenderCanvas.refresh_composite (保持缩放)
+    → regenerate thumbnails at current size
+    → emit layer_visibility_changed → RenderCanvas.refresh_composite (keep zoom)
     → emit thumbnail_changed → FileListPanel.refresh_current_thumbnail
+
+Language changed in settings
+  → LocaleManager.set_language
+    → emit language_changed
+      → MainWindow._retranslate_ui (window title, menus, panel titles, tooltips)
+      → FileListPanel._retranslate_ui (button tooltips)
+      → LayerPanel._retranslate_ui (button tooltips)
+
+Theme changed in settings
+  → MainWindow._apply_theme
+    → ThemeManager.set_theme / set_custom_colors
+      → ThemeManager._apply → rebuild stylesheet + update icon colour + set app font
 ```
 
-## 已知限制
+## Known limitations
 
-- 仅支持 Normal 混合模式，其他模式按 Normal 处理
-- 拖拽导出的临时文件未自动清理
-- 初始加载大 PSD (100+ 图层) 可能较慢
+- Only the "normal" blend mode is supported; other modes fall back to normal.
+- Drag-export temp files are not automatically cleaned up.
+- Initial load of large PSDs (100+ layers) can be slow.
+- Layer visibility/size-panel nesting depth ~5 — deferred per AGENTS.md.

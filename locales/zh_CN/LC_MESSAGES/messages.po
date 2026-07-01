@@ -292,3 +292,9 @@ msgstr "保存失败："
 msgid " / Drag and drop .psd"
 msgstr " / 拖放 .psd"
 
+msgid "Flip horizontally"
+msgstr "水平翻转"
+
+msgid "Flip vertically"
+msgstr "垂直翻转"
+

@@ -294,3 +294,9 @@ msgstr "Failed to save: "
 msgid " / Drag and drop .psd"
 msgstr " / Drag and drop .psd"
 
+msgid "Flip horizontally"
+msgstr "Flip horizontally"
+
+msgid "Flip vertically"
+msgstr "Flip vertically"
+
