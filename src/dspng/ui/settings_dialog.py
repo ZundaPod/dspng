@@ -133,6 +133,8 @@ class SettingsDialog(QDialog):
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(tr("OK"))
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Cancel"))
         buttons.accepted.connect(self._on_accept)
         buttons.rejected.connect(self.reject)
 
@@ -155,11 +157,9 @@ class SettingsDialog(QDialog):
 
     def _retranslate_ui(self):
         self.setWindowTitle(tr("Settings"))
-        for i, item in enumerate(self._sidebar_items):
-            if i == 0:
-                item.setText(tr("Appearance"))
-            elif i == 1:
-                item.setText(tr("Keymaps"))
+        for i, name in enumerate(["Appearance", "Files", "Keymaps"]):
+            if i < len(self._sidebar_items):
+                self._sidebar_items[i].setText(tr(name))
         self._appearance._retranslate_ui()
         self._keymaps._retranslate_ui()
 
@@ -654,6 +654,8 @@ _KEYMAPS: list[tuple[str, list[tuple[str, str | tuple[str, str]]]]] = [
             ("Pan", "Middle-click / Right-click / Alt+Left-click drag"),
             ("Fit to view", "Double-click"),
             ("Export PNG (drag)", "Left-click drag"),
+            ("Flip horizontally", ("actions", "flip-vertical")),
+            ("Flip vertically", ("actions", "flip-horizontal")),
         ],
     ),
     (

@@ -16,7 +16,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..psd_manager import DocumentStore
+from .icon_manager import icon
 from .locale_manager import tr
 from .panels.file_list import FileListPanel
 from .panels.layer_panel import LayerPanel
@@ -76,6 +77,9 @@ class MainWindow(QMainWindow):
 
         # Layout
         self._setup_layout()
+
+        # Flip buttons start enabled only when a document is loaded.
+        self._update_flip_button_state()
 
         # Wire up signals
         self._file_list.document_selected.connect(self._on_document_selected)
@@ -166,6 +170,7 @@ class MainWindow(QMainWindow):
         h_splitter = QSplitter(Qt.Orientation.Horizontal)
         render_panel, self._title_render = self._make_panel(tr("Render"), self._canvas)
         self._add_temp_dir_row(render_panel)
+        self._add_flip_row(render_panel)
         h_splitter.addWidget(render_panel)
         h_splitter.setStretchFactor(0, 3)
 
@@ -218,6 +223,47 @@ class MainWindow(QMainWindow):
         row_layout.addWidget(browse_btn)
 
         layout.insertWidget(1, row_widget)
+
+    def _add_flip_row(self, render_panel: QFrame):
+        """Add a row between the temp-directory row and the render canvas
+        with a stretch and two checkable flip buttons.
+
+        Layout: [stretch] [flip X] [flip Y]
+        """
+        layout = render_panel.layout()
+        if layout is None:
+            return
+
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(
+            SPACING_NONE, SPACING_NONE, SPACING_NONE, SPACING_NONE
+        )
+        row_layout.setSpacing(SPACING_XS)
+
+        # Empty space on the left — pushes buttons to the right.
+        row_layout.addStretch()
+
+        self._btn_flip_x = QPushButton()
+        self._btn_flip_x.setIcon(icon("actions", "flip-vertical"))
+        self._btn_flip_x.setIconSize(QSize(20, 20))
+        self._btn_flip_x.setToolTip(tr("Flip horizontally"))
+        self._btn_flip_x.setCheckable(True)
+        self._btn_flip_x.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        self._btn_flip_x.clicked.connect(self._on_flip_x)
+        row_layout.addWidget(self._btn_flip_x)
+
+        self._btn_flip_y = QPushButton()
+        self._btn_flip_y.setIcon(icon("actions", "flip-horizontal"))
+        self._btn_flip_y.setIconSize(QSize(20, 20))
+        self._btn_flip_y.setToolTip(tr("Flip vertically"))
+        self._btn_flip_y.setCheckable(True)
+        self._btn_flip_y.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        self._btn_flip_y.clicked.connect(self._on_flip_y)
+        row_layout.addWidget(self._btn_flip_y)
+
+        # Insert between temp-dir row (index 1) and canvas (currently at 2).
+        layout.insertWidget(2, row_widget)
 
     # ------------------------------------------------------------------
     # Menus
@@ -272,6 +318,12 @@ class MainWindow(QMainWindow):
         self._title_files.setText(tr("Files"))
         self._title_layers.setText(tr("Layers"))
 
+        # Update flip button tooltips after a language change.
+        if hasattr(self, "_btn_flip_x"):
+            self._btn_flip_x.setToolTip(tr("Flip horizontally"))
+        if hasattr(self, "_btn_flip_y"):
+            self._btn_flip_y.setToolTip(tr("Flip vertically"))
+
         # Update the temp directory row after a language change.
         if hasattr(self, "_temp_dir_edit"):
             row = self._temp_dir_edit.parentWidget()
@@ -324,12 +376,30 @@ class MainWindow(QMainWindow):
         doc = self._store.selected_document
         self._canvas.set_document(doc)
         self._layer_panel.set_document(doc)
+        self._update_flip_button_state()
 
     def _on_visibility_changed(self):
         self._canvas.refresh_composite()
 
     def _on_thumbnail_changed(self):
         self._file_list.refresh_current_thumbnail()
+
+    def _on_flip_x(self):
+        """Toggle horizontal flip on the render canvas."""
+        self._canvas.set_flip_x(self._btn_flip_x.isChecked())
+
+    def _on_flip_y(self):
+        """Toggle vertical flip on the render canvas."""
+        self._canvas.set_flip_y(self._btn_flip_y.isChecked())
+
+    def _update_flip_button_state(self):
+        """Enable or disable the flip buttons based on whether
+        a document is currently loaded."""
+        has_doc = self._store.selected_document is not None
+        if hasattr(self, "_btn_flip_x"):
+            self._btn_flip_x.setEnabled(has_doc)
+        if hasattr(self, "_btn_flip_y"):
+            self._btn_flip_y.setEnabled(has_doc)
 
     def _on_export_occurred(self):
         self._file_list.refresh_counter()
@@ -349,6 +419,7 @@ class MainWindow(QMainWindow):
         doc = self._store.selected_document
         self._canvas.set_document(doc)
         self._layer_panel.set_document(doc)
+        self._update_flip_button_state()
 
     def _on_export(self):
         doc = self._store.selected_document

@@ -21,6 +21,7 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPainter,
     QPixmap,
+    QTransform,
     QWheelEvent,
 )
 from PySide6.QtWidgets import (
@@ -75,6 +76,10 @@ class RenderCanvas(QGraphicsView):
         self._drag_started = False
         self._DRAG_THRESHOLD = 5.0  # pixels before drag initiates
 
+        # Flip state (display-only, does not modify source image)
+        self._flip_x = False
+        self._flip_y = False
+
         # Zoom limits
         self._zoom_min = 0.05
         self._zoom_max = 40.0
@@ -88,6 +93,20 @@ class RenderCanvas(QGraphicsView):
         """Display a new document (or None to clear).  Fits to view."""
         self._doc = doc
         self._rebuild_scene(fit=True)
+
+    def set_flip_x(self, flipped: bool):
+        """Toggle horizontal (X) flip of the displayed composite.
+
+        This is a display-only transform — the source image data is
+        never modified.
+        """
+        self._flip_x = flipped
+        self._apply_flip_transform()
+
+    def set_flip_y(self, flipped: bool):
+        """Toggle vertical (Y) flip of the displayed composite."""
+        self._flip_y = flipped
+        self._apply_flip_transform()
 
     def refresh_composite(self):
         """Re-composite and re-display, keeping current zoom and pan."""
@@ -113,6 +132,28 @@ class RenderCanvas(QGraphicsView):
         if fit:
             self.fitInView(self._scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
             self._zoom = self.transform().m11()
+
+        # Re-apply flip transform on a fresh pixmap item.
+        self._apply_flip_transform()
+
+    def _apply_flip_transform(self):
+        """Apply the current flip_x / flip_y state as a QTransform
+        on the pixmap item, flipping about the image center.
+
+        Both flips compose naturally: flip_x + flip_y = 180° rotation
+        about the center.
+        """
+        if self._pixmap_item is None:
+            return
+        pixmap = self._pixmap_item.pixmap()
+        w, h = pixmap.width(), pixmap.height()
+        transform = QTransform()
+        transform.translate(w / 2, h / 2)
+        sx = -1 if self._flip_x else 1
+        sy = -1 if self._flip_y else 1
+        transform.scale(sx, sy)
+        transform.translate(-w / 2, -h / 2)
+        self._pixmap_item.setTransform(transform)
 
     # ------------------------------------------------------------------
     # Zoom
