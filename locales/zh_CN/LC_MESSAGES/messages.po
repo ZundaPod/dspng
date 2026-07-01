@@ -238,11 +238,17 @@ msgstr "放大 / 缩小"
 msgid "Temp files"
 msgstr "临时文件"
 
+msgid "Temp Directory"
+msgstr "临时目录"
+
 msgid "Drag-export temp dir"
 msgstr "拖拽导出临时目录"
 
 msgid "Browse…"
 msgstr "浏览…"
+
+msgid "Change…"
+msgstr "更改…"
 
 msgid "Choose temp directory"
 msgstr "选择临时目录"

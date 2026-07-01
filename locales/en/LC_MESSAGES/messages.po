@@ -240,11 +240,17 @@ msgstr "Zoom in / out"
 msgid "Temp files"
 msgstr "Temp files"
 
+msgid "Temp Directory"
+msgstr "Temp Directory"
+
 msgid "Drag-export temp dir"
 msgstr "Drag-export temp dir"
 
 msgid "Browse…"
 msgstr "Browse…"
+
+msgid "Change…"
+msgstr "Change…"
 
 msgid "Choose temp directory"
 msgstr "Choose temp directory"
