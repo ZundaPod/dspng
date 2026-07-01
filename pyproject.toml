@@ -1,6 +1,6 @@
 [project]
 name = "dspng"
-version = "1.1.0"
+version = "1.2.0"
 description = "A standalone tool for rendering PSD files to PNG without Photoshop."
 requires-python = ">=3.14"
 dependencies = [

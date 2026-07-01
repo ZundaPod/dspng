@@ -1,11 +1,21 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [1.2.0] — 2026-07-01
+
+### Features
+
+- **ui:** Add temp dir quick access row (#20)
+- Add flip buttons for render canvas and localize dialog buttons (#21)
 ## [1.1.0] — 2026-06-17
 
 ### Features
 
 - I18n, M3 theme, settings dialog, layer fixes, CI (#15)
+
+### Release
+
+- Bump to 1.1.0
 ## [1.0.0] — 2026-06-15
 
 ### Bug Fixes
