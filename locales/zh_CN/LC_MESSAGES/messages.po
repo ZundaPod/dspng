@@ -298,3 +298,9 @@ msgstr "水平翻转"
 msgid "Flip vertically"
 msgstr "垂直翻转"
 
+msgid "OK"
+msgstr "确定"
+
+msgid "Cancel"
+msgstr "取消"
+

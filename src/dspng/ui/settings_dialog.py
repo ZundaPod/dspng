@@ -133,6 +133,8 @@ class SettingsDialog(QDialog):
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(tr("OK"))
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Cancel"))
         buttons.accepted.connect(self._on_accept)
         buttons.rejected.connect(self.reject)
 
